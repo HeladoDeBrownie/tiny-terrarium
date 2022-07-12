@@ -10,7 +10,7 @@ __lua__
 -- 64x64 cause glitches because
 -- they overlap the section of
 -- the sprite sheet that the
--- swap function uses for
+-- move function uses for
 -- metadata.
 board_width,board_height=32,32
 
@@ -26,14 +26,24 @@ cursor_x,cursor_y=0,0
 -->8
 -- functions
 
--- swap (x1,y1) with (x2,y2) if
--- the latter is air and the
--- two atoms have not already
--- been swapped this turn.
+-- move the atom at (x1,y1) into
+-- (x2,y2). this results in
+-- either a swap, a fusion, or
+-- no change:
+-- - swap the two atoms if the
+--   destination is air.
+-- - fuse the two atoms if
+--   there is a fusion reaction
+--   specified for them by the
+--   fuse function.
+-- - do nothing otherwise or if
+--   either atom has already
+--   moved this turn.
 -- precondition: (x1,y1) is in
 -- bounds.
 function
-swap(x1,y1,x2,y2)
+move(x1,y1,x2,y2)
+	local air=air
 	local in_bounds2=
 		0<=x2 and x2<board_width and
 		0<=y2 and y2<board_height
@@ -44,34 +54,63 @@ swap(x1,y1,x2,y2)
 		in_bounds2 and
 		sget(x2,y2) or
 		air
-	-- do nothing if:
+
+	-- do nothing if either atom
+	-- has been swapped this turn.
 	if
-		-- (x2,y2) isn't air;
-		atom2~=air or
-		-- (x1,y1) has already
-		-- swapped this turn;
 		sget(x1+64,y1)~=0 or
-		-- or (x2,y2) is in bounds
-		-- and has already swapped
-		-- this turn (out of bounds
-		-- can always swap);
 		(in_bounds2 and
 		sget(x2+64,y2)~=0)
 	then
 		return false
 	end
-	-- only copy (x1,y1) to
-	-- (x2,y2) if the latter is in
-	-- bounds.
-	if in_bounds2 then
-		sset(x2,y2,sget(x1,y1))
-		sset(x2+64,y2,1)
+
+	local atom1=sget(x1,y1)
+
+	-- swap with air.
+	if atom2==air then
+		-- only copy (x1,y1) to
+		-- (x2,y2) if the latter is
+		-- in bounds.
+		if in_bounds2 then
+			sset(x2,y2,atom1)
+			sset(x2+64,y2,1)
+		end
+
+		-- copy the air to (x1,y1),
+		-- which is assumed to be in
+		-- bounds.
+		sset(x1,y1,air)
+		sset(x1+64,y1,1)
+		return true
+	-- try to fuse anything else.
+	else
+		local f=fuse(atom1,atom2)
+		if(f==nil)return false
+		sset(x1,y1,air)
+		sset(x1+64,y1,1)
+		sset(x2,y2,f)
+		sset(x2+64,y1,1)
+		return true
 	end
-	-- copy the air to (x1,y1),
-	-- which is assumed in bounds.
-	sset(x1,y1,air)
-	sset(x1+64,y1,1)
-	return true
+end
+
+-- return the atom that the two
+-- given atoms fuse into if one
+-- exists, otherwise nil.
+function fuse(atom1,atom2)
+	local water=water
+	local sand=sand
+	-- water & sand -> clay
+	if
+		(atom1==water and
+		 atom2==sand)
+		or
+		(atom1==sand and
+		 atom2==water)
+	then
+		return clay
+	end
 end
 -->8
 -- hooks
@@ -106,24 +145,24 @@ _update()
 			-- moves left or right or
 			-- stays still at random.
 			if atom==water then
-				if not swap(x,y,x,y+1) then
+				if not move(x,y,x,y+1) then
 					local side=flr(rnd(3))-1
-					swap(x,y,x+side,y)
+					move(x,y,x+side,y)
 				end
 			-- clay falls straight down.
 			elseif atom==clay then
-				swap(x,y,x,y+1)
+				move(x,y,x,y+1)
 			-- sand falls straight down,
 			-- left, or right at random.
 			elseif atom==sand then
 				local side=flr(rnd(3))-1
-				swap(x,y,x+side,y+1)
+				move(x,y,x+side,y+1)
 			end
 		end
 	end
 
-	-- we're done swapping things;
-	-- forget this turn's swaps.
+	-- we're done moving things;
+	-- forget this turn's moves.
 	poke(0x5f55,0x00)
 	rectfill(64,0,128,64,0)
 	poke(0x5f55,0x60)
@@ -198,7 +237,7 @@ cccccccccccccccccccccccccccccccc000000000000000000000000000000001111111111111111
 cccccccccccccccccccccccccccccccc000000000000000000000000000000001111111111111111111111111111111111111111111111111111111111111111
 cccccccccccccccccccccccccccccccc000000000000000000000000000000001111111111111111111111111111111111111111111111111111111111111111
 cccccccccccccccccccccccccccccccc000000000000000000000000000000001111111111111111111111111111111111111111111111111111111111111111
-cccccccc5cccccccccccccc5cccccccc000000000000000000000000000000001111111111111111111111111111111111111111111111111111111111111111
+cccccccc5c11111cc11111c5cccccccc000000000000000000000000000000001111111111111111111111111111111111111111111111111111111111111111
 cccccccc5555555555555555cccccccc000000000000000000000000000000001111111111111111111111111111111111111111111111111111111111111111
 00000000000000000000000000000000000000000000000000000000000000001111111111111111111111111111111111111111111111111111111111111111
 00000000000000000000000000000000000000000000000000000000000000001111111111111111111111111111111111111111111111111111111111111111

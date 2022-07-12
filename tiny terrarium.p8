@@ -14,6 +14,7 @@ __lua__
 -- metadata.
 board_width,board_height=32,32
 
+water= 1 -- dark blue
 clay = 4 -- brown
 block= 5 -- dark gray
 air  =12 -- light blue
@@ -57,7 +58,7 @@ swap(x1,y1,x2,y2)
 		(in_bounds2 and
 		sget(x2+64,y2)~=0)
 	then
-		return
+		return false
 	end
 	-- only copy (x1,y1) to
 	-- (x2,y2) if the latter is in
@@ -70,6 +71,7 @@ swap(x1,y1,x2,y2)
 	-- which is assumed in bounds.
 	sset(x1,y1,air)
 	sset(x1+64,y1,1)
+	return true
 end
 -->8
 -- hooks
@@ -81,6 +83,7 @@ _update()
 	-- doing so with globals.
 	local bw,bh=
 		board_width,board_height
+	local water=water
 	local clay=clay
 	local sand=sand
 
@@ -98,8 +101,17 @@ _update()
 	for y=0,bh-1 do
 		for x=0,bw-1 do
 			local atom=sget(x,y)
+			-- water falls straight
+			-- down if able, or else
+			-- moves left or right or
+			-- stays still at random.
+			if atom==water then
+				if not swap(x,y,x,y+1) then
+					local side=flr(rnd(3))-1
+					swap(x,y,x+side,y)
+				end
 			-- clay falls straight down.
-			if atom==clay then
+			elseif atom==clay then
 				swap(x,y,x,y+1)
 			-- sand falls straight down,
 			-- left, or right at random.

@@ -19,6 +19,10 @@ block= 5 -- dark gray
 air  =12 -- light blue
 sand =15 -- tan
 -->8
+-- state
+
+cursor_x,cursor_y=0,0
+-->8
 -- functions
 
 -- swap (x1,y1) with (x2,y2) if
@@ -75,11 +79,24 @@ _update()
 	-- repeatedly looking up local
 	-- variables is faster than
 	-- doing so with globals.
+	local bw,bh=
+		board_width,board_height
 	local clay=clay
 	local sand=sand
+
+	-- move the cursor based on
+	-- user input.
+	if(btn(⬅️))cursor_x-=1
+	if(btn(➡️))cursor_x+=1
+	if(btn(⬆️))cursor_y-=1
+	if(btn(⬇️))cursor_y+=1
+	cursor_x,cursor_y=
+		mid(0,cursor_x,bw-1),
+		mid(0,cursor_y,bh-1)
+
 	-- simulate each atom.
-	for y=0,board_height-1 do
-		for x=0,board_width-1 do
+	for y=0,bh-1 do
+		for x=0,bw-1 do
 			local atom=sget(x,y)
 			-- clay falls straight down.
 			if atom==clay then
@@ -92,6 +109,7 @@ _update()
 			end
 		end
 	end
+
 	-- we're done swapping things;
 	-- forget this turn's swaps.
 	poke(0x5f55,0x00)
@@ -101,6 +119,9 @@ end
 
 function
 _draw()
+	local bw,bh=
+		board_width,board_height
+
 	-- fill the screen with the
 	-- board. because normally
 	-- nothing will show through,
@@ -110,11 +131,28 @@ _draw()
 		-- sprite sheet position
 		0,0,
 		-- sprite size
-		board_width,board_height,
+		bw,bh,
 		-- screen position
 		0,0,
 		-- screen size
 		128,128
+	)
+
+	-- draw the cursor.
+	-- compute width and height
+	-- based on screen and board
+	-- sizes.
+	local cw,ch=128/bw,128/bh
+	-- compute screen position
+	-- based on logical position
+	-- and cursor size.
+	local csx,csy=
+		cursor_x*cw,cursor_y*ch
+	-- draw it as a black outline.
+	rect(
+		csx,csy,
+		csx+cw,csy+ch,
+		0
 	)
 end
 __gfx__

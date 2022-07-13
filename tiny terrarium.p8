@@ -158,6 +158,7 @@ board_width,board_height=32,32
 water= 1 -- dark blue
 clay = 4 -- brown
 block= 5 -- dark gray
+plant=11 -- light green
 air  =12 -- light blue
 oil  =13 -- lavender
 sand =15 -- tan
@@ -275,6 +276,12 @@ function bump(atom1,atom2)
 		atom2==oil
 	then
 		return oil,water
+	elseif
+		atom1==water and
+		atom2==plant and
+		flr(rnd(120))==0
+	then
+		return plant,plant
 	end
 end
 -->8

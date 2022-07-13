@@ -43,7 +43,7 @@ __lua__
 -- it, or else to attempt a
 -- special reaction. these
 -- reactions are determined by
--- the fuse function.
+-- the bump function.
 
 -- tile:
 -- a place on the board. it is
@@ -159,6 +159,7 @@ water= 1 -- dark blue
 clay = 4 -- brown
 block= 5 -- dark gray
 air  =12 -- light blue
+oil  =13 -- lavender
 sand =15 -- tan
 -->8
 -- state
@@ -173,10 +174,10 @@ cursor_x,cursor_y=0,0
 -- no change:
 -- - swap the two atoms if the
 --   destination is air.
--- - fuse the two atoms if
---   there is a fusion reaction
---   specified for them by the
---   fuse function.
+-- - apply a specific
+--   interaction if there is
+--   one specified for them by
+--   the bump function.
 -- - do nothing otherwise or if
 --   either atom has already
 --   moved this turn.
@@ -224,22 +225,30 @@ move(x1,y1,x2,y2)
 		sset(x1,y1,air)
 		sset(x1+64,y1,1)
 		return true
-	-- try to fuse anything else.
+	-- check anything else for
+	-- special interactions.
 	else
-		local f=fuse(atom1,atom2)
-		if(f==nil)return false
-		sset(x1,y1,air)
+		local f1,f2=bump(atom1,atom2)
+		if(f1==nil)return false
+		sset(x1,y1,f2 or air)
 		sset(x1+64,y1,1)
-		sset(x2,y2,f)
-		sset(x2+64,y1,1)
+		sset(x2,y2,f1)
+		sset(x2+64,y2,1)
 		return true
 	end
 end
 
--- return the atom that the two
--- given atoms fuse into if one
--- exists, otherwise nil.
-function fuse(atom1,atom2)
+-- return the atoms that the
+-- two atoms turn into when
+-- one moves into the other,
+-- or otherwise nil. the first
+-- of the results is the atom
+-- placed at the destination,
+-- and the second is placed at
+-- the source. the second is
+-- implicitly air if it's not
+-- specified.
+function bump(atom1,atom2)
 	local water=water
 	local sand=sand
 	-- water & sand -> clay
@@ -251,6 +260,12 @@ function fuse(atom1,atom2)
 		 atom2==water)
 	then
 		return clay
+	-- water & oil -> oil rises
+	elseif
+		atom1==water and
+		atom2==oil
+	then
+		return water,oil
 	end
 end
 -->8
@@ -265,6 +280,7 @@ _update()
 		board_width,board_height
 	local water=water
 	local clay=clay
+	local oil=oil
 	local sand=sand
 
 	-- move the cursor based on
@@ -281,11 +297,14 @@ _update()
 	for y=0,bh-1 do
 		for x=0,bw-1 do
 			local atom=sget(x,y)
-			-- water falls straight
-			-- down if able, or else
-			-- moves left or right or
-			-- stays still at random.
-			if atom==water then
+			-- water and oil fall
+			-- straight down if able, or
+			-- else move left or right
+			-- or stay still at random.
+			if
+				atom==water or
+				atom==oil
+			then
 				if not move(x,y,x,y+1) then
 					local side=flr(rnd(3))-1
 					move(x,y,x+side,y)

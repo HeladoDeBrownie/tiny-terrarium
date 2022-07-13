@@ -4,6 +4,147 @@ __lua__
 -- tiny terrarium
 -- by helado de brownie
 -->8
+-- glossary
+-- this is a comment-only tab
+-- explaining the terminology
+-- used throughout the code.
+
+-- atom:
+-- an individual particle that
+-- is independently simulated.
+-- every atom is represented by
+-- a pico-8 color, or,
+-- equivalently, an integer
+-- from 0 to 15 inclusive. the
+-- game state is completely
+-- determined by what colors
+-- are in what places.
+-- atoms come in multiple types
+-- that have their own special
+-- interactions with other
+-- atoms. these are described
+-- by the comments in the
+-- _update function.
+
+-- board:
+-- the place where the
+-- simulation happens. it takes
+-- up the entire screen and is
+-- a rectangular grid of tiles,
+-- each of which contains
+-- exactly one atom, no more or
+-- less.
+
+-- move:
+-- to move an atom from one
+-- tile to an adjacent tile
+-- means to swap it with air if
+-- the latter tile has air in
+-- it, or else to attempt a
+-- special reaction. these
+-- reactions are determined by
+-- the fuse function.
+
+-- tile:
+-- a place on the board. it is
+-- identified by a pair of
+-- coordinates, integers that
+-- are at least zero and at
+-- most one less than the
+-- respective dimension of the
+-- board. a tile always has
+-- exactly one atom in it.
+
+-- turn:
+-- one logical frame, which
+-- happens about thirty times
+-- per second. the board state
+-- advances once per turn. this
+-- is when all the rules and
+-- relations between atoms are
+-- checked.
+-->8
+-- optimization
+-- this is a comment-only tab
+-- explaining the optimization
+-- principles used throughout
+-- the code.
+
+-- because most computations in
+-- this code happen potentially
+-- hundreds of times per frame,
+-- it's very important to do
+-- things as cheap as possible.
+-- the primary way that pico-8
+-- makes it easy to follow
+-- performance properties is
+-- using its built-in cpu meter
+-- that can be toggled by
+-- pressing ctrl+p while a cart
+-- is running. the middle and
+-- right numbers should read as
+-- less than 1.00 as much of
+-- the time as possible.
+-- some optimization principles
+-- are used throughout the
+-- source code, which are
+-- explained here.
+
+-- use local variables for
+-- repeated lookups.
+-- looking up global variables
+-- is significantly slower than
+-- looking up locals, even when
+-- no other computations are
+-- involved. a function can be
+-- sped up without changing the
+-- rest of its code just by
+-- inserting a local definition
+-- at the beginning that has
+-- the same name as a global
+-- that is referred to more
+-- than once, and is set to the
+-- value of that global. e.g.,
+-- 	local air=air
+
+-- compute everything once.
+-- nontrivial computations such
+-- as performing arithmetic or
+-- comparisons on values tend
+-- to be slower than reading
+-- local variables or
+-- parameters. functions should
+-- be designed so that they can
+-- accept information that is
+-- already known or otherwise
+-- use preconditions, i.e.,
+-- assume the inputs are valid
+-- instead of checking them
+-- when it is known ahead of
+-- time that the function will
+-- only be called on valid
+-- inputs.
+
+-- inline.
+-- writing separate functions
+-- is useful for the sake of
+-- code reuse, but calling them
+-- has a cost that is not
+-- always worth the tradeoff.
+-- avoid calling functions when
+-- it would noticeably slow
+-- down the code, and instead
+-- write the logic at the site
+-- it's used.
+-- this principle in particular
+-- should only be applied when
+-- it leads to *observable*
+-- performance increase, in
+-- order to offset its tendency
+-- to make logic harder to
+-- follow or make code harder
+-- to maintain.
+-->8
 -- constants
 
 -- board sizes larger than
@@ -26,7 +167,7 @@ cursor_x,cursor_y=0,0
 -->8
 -- functions
 
--- move the atom at (x1,y1) into
+-- move the atom at (x1,y1) to
 -- (x2,y2). this results in
 -- either a swap, a fusion, or
 -- no change:

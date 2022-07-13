@@ -161,6 +161,14 @@ block= 5 -- dark gray
 air  =12 -- light blue
 oil  =13 -- lavender
 sand =15 -- tan
+
+-- the out of bounds area can't
+-- change but it's assumed to
+-- be full of a specific atom.
+-- in bounds atoms can react to
+-- it; see the move and bump
+-- functions.
+out_of_bounds=air
 -->8
 -- state
 
@@ -169,33 +177,28 @@ cursor_x,cursor_y=0,0
 -- functions
 
 -- move the atom at (x1,y1) to
--- (x2,y2). this results in
--- either a swap, a fusion, or
--- no change:
--- - swap the two atoms if the
---   destination is air.
--- - apply a specific
---   interaction if there is
---   one specified for them by
---   the bump function.
--- - do nothing otherwise or if
---   either atom has already
---   moved this turn.
+-- (x2,y2). the result of this
+-- depends on the interactions
+-- specified by the bump
+-- function, but broadly
+-- speaking either ends up
+-- changing the two atoms or
+-- doing nothing.
 -- precondition: (x1,y1) is in
 -- bounds.
+-- return whether the move
+-- succeeded, i.e., the bump
+-- function specified an
+-- interaction and it was done.
 function
 move(x1,y1,x2,y2)
-	local air=air
+	-- moving behaves a little
+	-- differently depending on
+	-- whether the destination is
+	-- in bounds.
 	local in_bounds2=
 		0<=x2 and x2<board_width and
 		0<=y2 and y2<board_height
-	-- out of bounds atoms don't
-	-- exist but are considered to
-	-- be air.
-	local atom2=
-		in_bounds2 and
-		sget(x2,y2) or
-		air
 
 	-- do nothing if either atom
 	-- has been swapped this turn.
@@ -208,64 +211,70 @@ move(x1,y1,x2,y2)
 	end
 
 	local atom1=sget(x1,y1)
+	-- if atom2 is out of bounds,
+	-- it's assumed to be of a
+	-- specific type of atom.
+	local atom2=
+		in_bounds2 and
+		sget(x2,y2) or
+		out_of_bounds
 
-	-- swap with air.
-	if atom2==air then
-		-- only copy (x1,y1) to
-		-- (x2,y2) if the latter is
-		-- in bounds.
-		if in_bounds2 then
-			sset(x2,y2,atom1)
-			sset(x2+64,y2,1)
-		end
+	-- determine what the atoms
+	-- change into.
+	local new_atom1,new_atom2=
+		bump(atom1,atom2)
 
-		-- copy the air to (x1,y1),
-		-- which is assumed to be in
-		-- bounds.
-		sset(x1,y1,air)
-		sset(x1+64,y1,1)
-		return true
-	-- check anything else for
-	-- special interactions.
-	else
-		local f1,f2=bump(atom1,atom2)
-		if(f1==nil)return false
-		sset(x1,y1,f2 or air)
-		sset(x1+64,y1,1)
-		sset(x2,y2,f1)
+	-- if there's no reaction, do
+	-- nothing.
+	if(new_atom1==nil)return false
+
+	-- change the atoms and mark
+	-- them as moved for the turn.
+	sset(x1,y1,new_atom1)
+	sset(x1+64,y1,1)
+	-- the destination atom isn't
+	-- changed if it's out of
+	-- bounds.
+	if in_bounds2 then
+		sset(x2,y2,new_atom2)
 		sset(x2+64,y2,1)
-		return true
 	end
+
+	return true
 end
 
--- return the atoms that the
--- two atoms turn into when
--- one moves into the other,
--- or otherwise nil. the first
--- of the results is the atom
--- placed at the destination,
--- and the second is placed at
--- the source. the second is
--- implicitly air if it's not
--- specified.
+-- given a source atom and a
+-- destination atom, return the
+-- atoms they turn into when
+-- the former is moved into
+-- the latter, or nil if there
+-- is no change.
+-- this relationship is not
+-- necessarily symmetric; even
+-- with the same two types of
+-- atom, moving one into the
+-- other doesn't necessarily do
+-- the same thing as the other
+-- way around.
 function bump(atom1,atom2)
-	local water=water
-	local sand=sand
-	-- water & sand -> clay
-	if
+	-- anything moves through air.
+	if atom2==air then
+		return atom2,atom1
+	-- water and sand make clay.
+	elseif
 		(atom1==water and
 		 atom2==sand)
 		or
 		(atom1==sand and
 		 atom2==water)
 	then
-		return clay
-	-- water & oil -> oil rises
+		return air,clay
+	-- oil rises on water.
 	elseif
 		atom1==water and
 		atom2==oil
 	then
-		return water,oil
+		return oil,water
 	end
 end
 -->8

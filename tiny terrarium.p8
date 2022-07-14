@@ -158,6 +158,8 @@ board_width,board_height=32,32
 water= 1 -- dark blue
 clay = 4 -- brown
 block= 5 -- dark gray
+egg  = 6 -- light gray
+bug  = 8 -- red
 plant=11 -- light green
 air  =12 -- light blue
 oil  =13 -- lavender
@@ -192,7 +194,7 @@ cursor_x,cursor_y=0,0
 -- function specified an
 -- interaction and it was done.
 function
-move(x1,y1,x2,y2)
+move(x1,y1,x2,y2,dig)
 	-- moving behaves a little
 	-- differently depending on
 	-- whether the destination is
@@ -223,7 +225,7 @@ move(x1,y1,x2,y2)
 	-- determine what the atoms
 	-- change into.
 	local new_atom1,new_atom2=
-		bump(atom1,atom2)
+		bump(atom1,atom2,dig)
 
 	-- if there's no reaction, do
 	-- nothing.
@@ -257,9 +259,24 @@ end
 -- other doesn't necessarily do
 -- the same thing as the other
 -- way around.
-function bump(atom1,atom2)
+function
+bump(atom1,atom2,dig)
+	-- bugs can move through most
+	-- things if actively digging.
+	-- they may also lay eggs.
+	if atom1==bug then
+		if dig and atom2~=block then
+			return
+				atom2==air and
+				flr(rnd(120))==0 and
+				egg or
+				atom2,
+				atom1
+		elseif atom2==air then
+			return atom2,atom1
+		end
 	-- anything moves through air.
-	if atom2==air then
+	elseif atom2==air then
 		return atom2,atom1
 	-- water and sand make clay.
 	elseif
@@ -289,13 +306,12 @@ end
 
 function
 _update()
-	-- repeatedly looking up local
-	-- variables is faster than
-	-- doing so with globals.
 	local bw,bh=
 		board_width,board_height
 	local water=water
 	local clay=clay
+	local egg=egg
+	local bug=bug
 	local oil=oil
 	local sand=sand
 
@@ -324,6 +340,37 @@ _update()
 				if not move(x,y,x,y+1) then
 					local side=flr(rnd(3))-1
 					move(x,y,x+side,y)
+				end
+			-- egg falls straight down,
+			-- left, or right at random,
+			-- or may hatch.
+			elseif atom==egg then
+				local side=flr(rnd(3))-1
+				local moved=
+					move(x,y,x+side,y+1)
+				if
+					not moved and
+					flr(rnd(3600))==0
+				then
+					sset(x,y,bug)
+					sset(x+64,y,1)
+				end
+			-- bug falls straight down,
+			-- or may move in a random
+			-- direction. it may lay an
+			-- egg if there's room.
+			elseif atom==bug then
+				if
+					not move(x,y,x,y+1) and
+					flr(rnd(15))==0
+				then
+					local sidex=flr(rnd(3))-1
+					local sidey=flr(rnd(3))-1
+					move(
+						x,y,
+						x+sidex,y+sidey,
+						true
+					)
 				end
 			-- clay falls straight down.
 			elseif atom==clay then

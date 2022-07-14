@@ -3,6 +3,26 @@ version 36
 __lua__
 -- tiny terrarium
 -- by helado de brownie
+
+-- this source code is best
+-- read in the pico-8 code
+-- editor or else in a
+-- programming text editor with
+-- tab width set to 1. try the
+-- education edition if you
+-- don't have access to it
+-- otherwise:
+-- https://www.pico-8-edu.com/
+
+-- because of the limited
+-- visible line length, lines
+-- are broken after 15
+-- characters. function
+-- declarations are written
+-- with the function keyword on
+-- its own line to make more
+-- room for the name and
+-- parameter list.
 -->8
 -- glossary
 -- this is a comment-only tab
@@ -174,6 +194,16 @@ sand =15 -- tan
 out_of_bounds=air
 -->8
 -- state
+
+-- the board state is the
+-- section of the sprite sheet
+-- starting at (0,0) and sized
+-- based on the board_width and
+-- board_height constants.
+
+-- the move state is the same
+-- size as the board state but
+-- begins at (64,0).
 
 cursor_x,cursor_y=0,0
 -->8

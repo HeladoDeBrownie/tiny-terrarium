@@ -206,6 +206,7 @@ out_of_bounds=air
 -- begins at (64,0).
 
 cursor_x,cursor_y=0,0
+selected_atom=sand
 -->8
 -- functions
 
@@ -345,16 +346,6 @@ _update()
 	local oil=oil
 	local sand=sand
 
-	-- move the cursor based on
-	-- user input.
-	if(btn(⬅️))cursor_x-=1
-	if(btn(➡️))cursor_x+=1
-	if(btn(⬆️))cursor_y-=1
-	if(btn(⬇️))cursor_y+=1
-	cursor_x,cursor_y=
-		mid(0,cursor_x,bw-1),
-		mid(0,cursor_y,bh-1)
-
 	-- simulate each atom.
 	for y=0,bh-1 do
 		for x=0,bw-1 do
@@ -419,6 +410,28 @@ _update()
 	poke(0x5f55,0x00)
 	rectfill(64,0,128,64,0)
 	poke(0x5f55,0x60)
+
+	-- respond to user input.
+	-- ⬅️➡️⬆️⬇️ move the cursor.
+	local cx,cy=cursor_x,cursor_y
+	if(btn(⬅️))cx-=1
+	if(btn(➡️))cx+=1
+	if(btn(⬆️))cy-=1
+	if(btn(⬇️))cy+=1
+	cx,cy=
+		mid(0,cx,bw-1),
+		mid(0,cy,bh-1)
+	cursor_x,cursor_y=cx,cy
+	-- 🅾️ replaces the atom under
+	-- the cursor with the
+	-- selected atom, unless it
+	-- would replace bug.
+	if
+		btn(🅾️)
+		and sget(cx,cy)~=bug
+	then
+		sset(cx,cy,selected_atom)
+	end
 end
 
 function

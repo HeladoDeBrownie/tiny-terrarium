@@ -16,7 +16,7 @@ __lua__
 
 -- because of the limited
 -- visible line length, lines
--- are broken after 15
+-- are broken after 31
 -- characters. function
 -- declarations are written
 -- with the function keyword on

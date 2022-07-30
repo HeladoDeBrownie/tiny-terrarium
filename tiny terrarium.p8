@@ -6,12 +6,9 @@ __lua__
 
 -- this source code is best
 -- read in the pico-8 code
--- editor or else in a
--- programming text editor with
--- tab width set to 1. try the
--- education edition if you
--- don't have access to it
--- otherwise:
+-- editor. try the education
+-- edition if you don't have
+-- access to it otherwise:
 -- https://www.pico-8-edu.com/
 
 -- because of the limited
@@ -125,7 +122,7 @@ __lua__
 -- that is referred to more
 -- than once, and is set to the
 -- value of that global. e.g.,
--- 	local air=air
+--  local air=air
 
 -- compute everything once.
 -- nontrivial computations such
@@ -203,7 +200,7 @@ sand =15 -- tan
 -- atoms. it starts in the
 -- center of the board.
 cursor_x,cursor_y=
-	board_width\2,board_height\2
+ board_width\2,board_height\2
 
 -- the following variables are
 -- set based on options that
@@ -265,8 +262,8 @@ out_of_bounds=nil
 
 function
 _init()
-	update_options()
-	set_screen(simulation_screen)
+ update_options()
+ set_screen(simulation_screen)
 end
 
 -- change what "screen" the
@@ -277,8 +274,8 @@ end
 -- fields 'update' and 'draw'.
 function
 set_screen(screen)
-	_update=screen.update
-	_draw=screen.draw
+ _update=screen.update
+ _draw=screen.draw
 end
 -->8
 -- simulation
@@ -287,158 +284,158 @@ simulation_screen={}
 
 function
 simulation_screen.update()
-	-- the pause button opens the
-	-- options screen.
-	if btnp(6) then
-		poke(0x5f30,1)
-		set_screen(options_screen)
-		return
-	end
+ -- the pause button opens the
+ -- options screen.
+ if btnp(6) then
+  poke(0x5f30,1)
+  set_screen(options_screen)
+  return
+ end
 
-	local bw,bh=
-		board_width,board_height
-	local water=water
-	local clay=clay
-	local egg=egg
-	local bug=bug
-	local oil=oil
-	local sand=sand
+ local bw,bh=
+  board_width,board_height
+ local water=water
+ local clay=clay
+ local egg=egg
+ local bug=bug
+ local oil=oil
+ local sand=sand
 
-	-- simulate each atom.
-	for y=0,bh-1 do
-		for x=0,bw-1 do
-			local atom=sget(x,y)
-			-- water and oil fall
-			-- straight down if able, or
-			-- else move left or right
-			-- or stay still at random.
-			if
-				atom==water or
-				atom==oil
-			then
-				if not move(x,y,x,y+1) then
-					local side=flr(rnd(3))-1
-					move(x,y,x+side,y)
-				end
-			-- egg falls straight down,
-			-- left, or right at random,
-			-- or may hatch.
-			elseif atom==egg then
-				local side=flr(rnd(3))-1
-				local moved=
-					move(x,y,x+side,y+1)
-				if
-					not moved and
-					flr(rnd(3600))==0
-				then
-					sset(x,y,bug)
-					sset(x+64,y,1)
-				end
-			-- bug falls straight down,
-			-- or may move in a random
-			-- direction. it may lay an
-			-- egg if there's room.
-			elseif atom==bug then
-				if
-					not move(x,y,x,y+1) and
-					flr(rnd(15))==0
-				then
-					local sidex=flr(rnd(3))-1
-					local sidey=flr(rnd(3))-1
-					move(
-						x,y,
-						x+sidex,y+sidey,
-						true
-					)
-				end
-			-- clay falls straight down.
-			elseif atom==clay then
-				move(x,y,x,y+1)
-			-- sand falls straight down,
-			-- left, or right at random.
-			elseif atom==sand then
-				local side=flr(rnd(3))-1
-				move(x,y,x+side,y+1)
-			end
-		end
-	end
+ -- simulate each atom.
+ for y=0,bh-1 do
+  for x=0,bw-1 do
+   local atom=sget(x,y)
+   -- water and oil fall
+   -- straight down if able, or
+   -- else move left or right
+   -- or stay still at random.
+   if
+    atom==water or
+    atom==oil
+   then
+    if not move(x,y,x,y+1) then
+     local side=flr(rnd(3))-1
+     move(x,y,x+side,y)
+    end
+   -- egg falls straight down,
+   -- left, or right at random,
+   -- or may hatch.
+   elseif atom==egg then
+    local side=flr(rnd(3))-1
+    local moved=
+     move(x,y,x+side,y+1)
+    if
+     not moved and
+     flr(rnd(3600))==0
+    then
+     sset(x,y,bug)
+     sset(x+64,y,1)
+    end
+   -- bug falls straight down,
+   -- or may move in a random
+   -- direction. it may lay an
+   -- egg if there's room.
+   elseif atom==bug then
+    if
+     not move(x,y,x,y+1) and
+     flr(rnd(15))==0
+    then
+     local sidex=flr(rnd(3))-1
+     local sidey=flr(rnd(3))-1
+     move(
+      x,y,
+      x+sidex,y+sidey,
+      true
+     )
+    end
+   -- clay falls straight down.
+   elseif atom==clay then
+    move(x,y,x,y+1)
+   -- sand falls straight down,
+   -- left, or right at random.
+   elseif atom==sand then
+    local side=flr(rnd(3))-1
+    move(x,y,x+side,y+1)
+   end
+  end
+ end
 
-	-- we're done moving things;
-	-- forget this turn's moves.
-	poke(0x5f55,0x00)
-	rectfill(64,0,128,64,0)
-	poke(0x5f55,0x60)
+ -- we're done moving things;
+ -- forget this turn's moves.
+ poke(0x5f55,0x00)
+ rectfill(64,0,128,64,0)
+ poke(0x5f55,0x60)
 
-	-- respond to player input.
+ -- respond to player input.
 
-	-- ⬅️➡️⬆️⬇️ move the cursor.
-	local btn=cursor_check
-	local cx,cy=cursor_x,cursor_y
-	if(btn(⬅️))cx-=1
-	if(btn(➡️))cx+=1
-	if(btn(⬆️))cy-=1
-	if(btn(⬇️))cy+=1
-	cx,cy=
-		mid(0,cx,bw-1),
-		mid(0,cy,bh-1)
-	cursor_x,cursor_y=cx,cy
+ -- ⬅️➡️⬆️⬇️ move the cursor.
+ local btn=cursor_check
+ local cx,cy=cursor_x,cursor_y
+ if(btn(⬅️))cx-=1
+ if(btn(➡️))cx+=1
+ if(btn(⬆️))cy-=1
+ if(btn(⬇️))cy+=1
+ cx,cy=
+  mid(0,cx,bw-1),
+  mid(0,cy,bh-1)
+ cursor_x,cursor_y=cx,cy
 
-	-- 🅾️ replaces the atom under
-	-- the cursor with the
-	-- selected atom, unless:
-	-- - overdraw is enabled and
-	--   the atom under the cursor
-	--   is bug;
-	-- - or underdraw is enabled
-	--   and the atom under the
-	--   cursor is not air.
-	local atom=sget(cx,cy)
-	if
-		btn(🅾️) and
-		((drawover and atom~=bug) or
-		 atom==air)
-	then
-		sset(cx,cy,drawn_atom)
-	end
+ -- 🅾️ replaces the atom under
+ -- the cursor with the
+ -- selected atom, unless:
+ -- - overdraw is enabled and
+ --   the atom under the cursor
+ --   is bug;
+ -- - or underdraw is enabled
+ --   and the atom under the
+ --   cursor is not air.
+ local atom=sget(cx,cy)
+ if
+  btn(🅾️) and
+  ((drawover and atom~=bug) or
+   atom==air)
+ then
+  sset(cx,cy,drawn_atom)
+ end
 end
 
 function
 simulation_screen.draw()
-	local bw,bh=
-		board_width,board_height
+ local bw,bh=
+  board_width,board_height
 
-	-- fill the screen with the
-	-- board. because normally
-	-- nothing will show through,
-	-- we don't need to clear the
-	-- screen explicitly.
-	sspr(
-		-- sprite sheet position
-		0,0,
-		-- sprite size
-		bw,bh,
-		-- screen position
-		0,0,
-		-- screen size
-		128,128
-	)
+ -- fill the screen with the
+ -- board. because normally
+ -- nothing will show through,
+ -- we don't need to clear the
+ -- screen explicitly.
+ sspr(
+  -- sprite sheet position
+  0,0,
+  -- sprite size
+  bw,bh,
+  -- screen position
+  0,0,
+  -- screen size
+  128,128
+ )
 
-	-- draw the cursor.
-	-- compute width and height
-	-- based on screen and board
-	-- sizes.
-	local cw,ch=128/bw,128/bh
-	-- compute screen position
-	-- based on logical position
-	-- and cursor size.
-	local csx,csy=
-		cursor_x*cw,cursor_y*ch
-	-- draw it as a black outline.
-	rect(
-		csx-1,csy-1,
-		csx+cw,csy+ch,
-		0
-	)
+ -- draw the cursor.
+ -- compute width and height
+ -- based on screen and board
+ -- sizes.
+ local cw,ch=128/bw,128/bh
+ -- compute screen position
+ -- based on logical position
+ -- and cursor size.
+ local csx,csy=
+  cursor_x*cw,cursor_y*ch
+ -- draw it as a black outline.
+ rect(
+  csx-1,csy-1,
+  csx+cw,csy+ch,
+  0
+ )
 end
 
 -- move the atom at (x1,y1) to
@@ -457,55 +454,55 @@ end
 -- interaction and it was done.
 function
 move(x1,y1,x2,y2,dig)
-	-- moving behaves a little
-	-- differently depending on
-	-- whether the destination is
-	-- in bounds.
-	local in_bounds2=
-		0<=x2 and x2<board_width and
-		0<=y2 and y2<board_height
+ -- moving behaves a little
+ -- differently depending on
+ -- whether the destination is
+ -- in bounds.
+ local in_bounds2=
+  0<=x2 and x2<board_width and
+  0<=y2 and y2<board_height
 
-	-- do nothing if either atom
-	-- has been swapped this turn.
-	if
-		sget(x1+64,y1)~=0 or
-		(in_bounds2 and
-		sget(x2+64,y2)~=0)
-	then
-		return false
-	end
+ -- do nothing if either atom
+ -- has been swapped this turn.
+ if
+  sget(x1+64,y1)~=0 or
+  (in_bounds2 and
+  sget(x2+64,y2)~=0)
+ then
+  return false
+ end
 
-	local atom1=sget(x1,y1)
-	-- if atom2 is out of bounds,
-	-- it's assumed to be of a
-	-- specific type of atom.
-	local atom2=
-		in_bounds2 and
-		sget(x2,y2) or
-		out_of_bounds
+ local atom1=sget(x1,y1)
+ -- if atom2 is out of bounds,
+ -- it's assumed to be of a
+ -- specific type of atom.
+ local atom2=
+  in_bounds2 and
+  sget(x2,y2) or
+  out_of_bounds
 
-	-- determine what the atoms
-	-- change into.
-	local new_atom1,new_atom2=
-		bump(atom1,atom2,dig)
+ -- determine what the atoms
+ -- change into.
+ local new_atom1,new_atom2=
+  bump(atom1,atom2,dig)
 
-	-- if there's no reaction, do
-	-- nothing.
-	if(new_atom1==nil)return false
+ -- if there's no reaction, do
+ -- nothing.
+ if(new_atom1==nil)return false
 
-	-- change the atoms and mark
-	-- them as moved for the turn.
-	sset(x1,y1,new_atom1)
-	sset(x1+64,y1,1)
-	-- the destination atom isn't
-	-- changed if it's out of
-	-- bounds.
-	if in_bounds2 then
-		sset(x2,y2,new_atom2)
-		sset(x2+64,y2,1)
-	end
+ -- change the atoms and mark
+ -- them as moved for the turn.
+ sset(x1,y1,new_atom1)
+ sset(x1+64,y1,1)
+ -- the destination atom isn't
+ -- changed if it's out of
+ -- bounds.
+ if in_bounds2 then
+  sset(x2,y2,new_atom2)
+  sset(x2+64,y2,1)
+ end
 
-	return true
+ return true
 end
 
 -- given a source atom and a
@@ -523,45 +520,45 @@ end
 -- way around.
 function
 bump(atom1,atom2,dig)
-	-- bugs can move through most
-	-- things if actively digging.
-	-- they may also lay eggs.
-	if atom1==bug then
-		if dig and atom2~=block then
-			return
-				atom2==air and
-				flr(rnd(120))==0 and
-				egg or
-				atom2,
-				atom1
-		elseif atom2==air then
-			return atom2,atom1
-		end
-	-- anything moves through air.
-	elseif atom2==air then
-		return atom2,atom1
-	-- water and sand make clay.
-	elseif
-		(atom1==water and
-		 atom2==sand)
-		or
-		(atom1==sand and
-		 atom2==water)
-	then
-		return air,clay
-	-- oil rises on water.
-	elseif
-		atom1==water and
-		atom2==oil
-	then
-		return oil,water
-	elseif
-		atom1==water and
-		atom2==plant and
-		flr(rnd(120))==0
-	then
-		return plant,plant
-	end
+ -- bugs can move through most
+ -- things if actively digging.
+ -- they may also lay eggs.
+ if atom1==bug then
+  if dig and atom2~=block then
+   return
+    atom2==air and
+    flr(rnd(120))==0 and
+    egg or
+    atom2,
+    atom1
+  elseif atom2==air then
+   return atom2,atom1
+  end
+ -- anything moves through air.
+ elseif atom2==air then
+  return atom2,atom1
+ -- water and sand make clay.
+ elseif
+  (atom1==water and
+   atom2==sand)
+  or
+  (atom1==sand and
+   atom2==water)
+ then
+  return air,clay
+ -- oil rises on water.
+ elseif
+  atom1==water and
+  atom2==oil
+ then
+  return oil,water
+ elseif
+  atom1==water and
+  atom2==plant and
+  flr(rnd(120))==0
+ then
+  return plant,plant
+ end
 end
 -->8
 -- options
@@ -580,138 +577,138 @@ end
 -- function that parses the
 -- formatting codes.
 options={
-	selected=1,
-	{
-		label='  atom',
-		selected=1,
-		{label=' \f5block',value= 5},
-		{label='  \f4clay',value= 4},
-		{label='  \ffsand',value=15},
-		{
-			label=' \#c\f1water',
-			value=1,
-		},
-		{label='   \fdoil',value=13},
-		{label=' \fbplant',value=11},
-		{label='   \f6egg',value= 6},
-	},
-	{
-		label=' brush',
-		selected=1,
-		{label='   1x1',value={1,1}},
-		{label='   2x2',value={2,2}},
-		{label='   4x4',value={4,4}},
-		{label='   8x8',value={8,8}},
-		{
-			label='   row',
-			value={board_width,1}
-		},
-		{
-			label='column',
-			value={1,board_height}
-		},
-	},
-	{
-		label='  draw',
-		selected=1,
-		{label='  over',value=true},
-		{label=' under',value=false},
-	},
-	{
-		label=' erase',
-		selected=1,
-		{label='  type',value=true},
-		{label='   any',value=false},
-	},
-	{
-		label='cursor',
-		selected=1,
-		{label='  fast',value=btn},
-		{label='  slow',value=btnp},
-	},
-	{
-		label='  time',
-		selected=1,
-		{label='  fast',value=1},
-		{label='  slow',value=2},
-		{label='  stop',value=nil
-	},
-	},
-	{
-		label='  edge',
-		selected=1,
-		{label='   \fcair',value=12},
-		{label=' \f5block',value= 5},
-	},
+ selected=1,
+ {
+  label='  atom',
+  selected=1,
+  {label=' \f5block',value= 5},
+  {label='  \f4clay',value= 4},
+  {label='  \ffsand',value=15},
+  {
+   label=' \#c\f1water',
+   value=1,
+  },
+  {label='   \fdoil',value=13},
+  {label=' \fbplant',value=11},
+  {label='   \f6egg',value= 6},
+ },
+ {
+  label=' brush',
+  selected=1,
+  {label='   1x1',value={1,1}},
+  {label='   2x2',value={2,2}},
+  {label='   4x4',value={4,4}},
+  {label='   8x8',value={8,8}},
+  {
+   label='   row',
+   value={board_width,1}
+  },
+  {
+   label='column',
+   value={1,board_height}
+  },
+ },
+ {
+  label='  draw',
+  selected=1,
+  {label='  over',value=true},
+  {label=' under',value=false},
+ },
+ {
+  label=' erase',
+  selected=1,
+  {label='  type',value=true},
+  {label='   any',value=false},
+ },
+ {
+  label='cursor',
+  selected=1,
+  {label='  fast',value=btn},
+  {label='  slow',value=btnp},
+ },
+ {
+  label='  time',
+  selected=1,
+  {label='  fast',value=1},
+  {label='  slow',value=2},
+  {label='  stop',value=nil
+ },
+ },
+ {
+  label='  edge',
+  selected=1,
+  {label='   \fcair',value=12},
+  {label=' \f5block',value= 5},
+ },
 }
 
 options_screen={}
 
 function
 options_screen.update()
-	-- any button but an arrow
-	-- returns to the simulation
-	-- screen.
-	if
-		btn(🅾️) or
-		btn(❎) or
-		btn(6)
-	then
-		poke(0x5f30,1)
-		update_options()
-		set_screen(simulation_screen)
-		return
-	end
+ -- any button but an arrow
+ -- returns to the simulation
+ -- screen.
+ if
+  btn(🅾️) or
+  btn(❎) or
+  btn(6)
+ then
+  poke(0x5f30,1)
+  update_options()
+  set_screen(simulation_screen)
+  return
+ end
 
-	-- ⬆️⬇️ change which option is
-	-- being set.
-	if(btnp(⬆️))change(options,-1)
-	if(btnp(⬇️))change(options, 1)
-	-- ⬅️➡️ change the selection
-	-- for the current option.
-	local option=
-		options[options.selected]
-	if(btnp(⬅️))change(option, -1)
-	if(btnp(➡️))change(option,  1)
+ -- ⬆️⬇️ change which option is
+ -- being set.
+ if(btnp(⬆️))change(options,-1)
+ if(btnp(⬇️))change(options, 1)
+ -- ⬅️➡️ change the selection
+ -- for the current option.
+ local option=
+  options[options.selected]
+ if(btnp(⬅️))change(option, -1)
+ if(btnp(➡️))change(option,  1)
 end
 
 function
 options_screen.draw()
-	simulation_screen.draw()
-	-- make a box on screen that's
-	-- large enough to accommodate
-	-- however many options there
-	-- are, and centered.
-	local w,h=80,8+(#options+4)*6
-	local x,y=
-		(128-w)/2,(128-h)/2
-	camera(-x,-y)
-	rectfill(-1,-1,w+1,h+1,1)
-	rect(-1,-1,w+1,h+1,0)
-	cursor(9,5)
-	for option in all(options) do
-		local selection=
-			option[option.selected]
-		print(
-			option.label..
-			'  '..
-			selection.label,
-			7
-		)
-	end
-	print([[
+ simulation_screen.draw()
+ -- make a box on screen that's
+ -- large enough to accommodate
+ -- however many options there
+ -- are, and centered.
+ local w,h=80,8+(#options+4)*6
+ local x,y=
+  (128-w)/2,(128-h)/2
+ camera(-x,-y)
+ rectfill(-1,-1,w+1,h+1,1)
+ rect(-1,-1,w+1,h+1,0)
+ cursor(9,5)
+ for option in all(options) do
+  local selection=
+   option[option.selected]
+  print(
+   option.label..
+   '  '..
+   selection.label,
+   7
+  )
+ end
+ print([[
 
 (hold pause to
 open the pico-8
 pause menu.)
 ]], 7)
-	print(
-		'      <        >',
-		9,5+(options.selected-1)*6,
-		11
-	)
-	camera()
-	clip()
+ print(
+  '      <        >',
+  9,5+(options.selected-1)*6,
+  11
+ )
+ camera()
+ clip()
 end
 
 -- set which selection the
@@ -723,10 +720,10 @@ end
 -- wraps around.
 function
 change(option,amount)
-	local length=#option
-	option.selected=
-		((option.selected+amount-1)%
-		length)+1
+ local length=#option
+ option.selected=
+  ((option.selected+amount-1)%
+  length)+1
 end
 
 -- copy the values of all
@@ -742,14 +739,14 @@ end
 -- variable.
 function
 update_options()
-	local o=options
-	drawn_atom   =get_value(o[1])
-	brush        =get_value(o[2])
-	drawover     =get_value(o[3])
-	erase_type   =get_value(o[4])
-	cursor_check =get_value(o[5])
-	time_speed   =get_value(o[6])
-	out_of_bounds=get_value(o[7])
+ local o=options
+ drawn_atom   =get_value(o[1])
+ brush        =get_value(o[2])
+ drawover     =get_value(o[3])
+ erase_type   =get_value(o[4])
+ cursor_check =get_value(o[5])
+ time_speed   =get_value(o[6])
+ out_of_bounds=get_value(o[7])
 end
 
 -- get the value corresponding
@@ -757,8 +754,8 @@ end
 -- the given option.
 function
 get_value(option)
-	return
-		option[option.selected].value
+ return
+  option[option.selected].value
 end
 __gfx__
 ffffffffffffffffffffffffffffffff000000000000000000000000000000001111111111111111111111111111111111111111111111111111111111111111

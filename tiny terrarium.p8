@@ -381,48 +381,56 @@ simulation_screen.update()
  -- ⬅️➡️⬆️⬇️ move the cursor.
  local btn=cursor_check
  local cx,cy=cursor_x,cursor_y
+ local brw,brh=
+  brush[1],brush[2]
  if(btn(⬅️))cx-=1
  if(btn(➡️))cx+=1
  if(btn(⬆️))cy-=1
  if(btn(⬇️))cy+=1
  cx,cy=
-  mid(0,cx,bw-1),
-  mid(0,cy,bh-1)
+  mid(0,cx,bw-brw),
+  mid(0,cy,bh-brh)
  cursor_x,cursor_y=cx,cy
 
- local atom_to_put
- local atom=sget(cx,cy)
  -- 🅾️ replaces the atom under
  -- the cursor with the
  -- selected atom if:
  -- - overdraw is enabled; or
- -- - the atom is air.
- if
-  btn(🅾️) and
-  (overdraw or atom==air)
- then
-  atom_to_put=drawn_atom
- end
+ -- - the atom under the cursor
+ --   is air.
  -- ❎ replaces the atom under
  -- the cursor with air if:
  -- - erase_type is enabled and
  --   the atom is the same as
  --   the selected atom; or
  -- - erase_type is disabled.
- if
-  btn(❎) and
-  (not erase_type or
-   atom==drawn_atom)
- then
-  atom_to_put=air
- end
- -- neither 🅾️ nor ❎ can
- -- replace bug.
- if
-  atom_to_put~=nil and
-  atom~=bug
- then
-  sset(cx,cy,atom_to_put)
+ local atom
+ if(btn(🅾️))atom=drawn_atom
+ if(btn(❎))atom=air
+ if atom~=nil then
+  for x=cx,cx+brw-1 do
+   for y=cy,cy+brh-1 do
+    local atom_here=sget(x,y)
+    if(atom_here==bug)goto next
+    if atom==air then
+     if
+      erase_type and
+      atom_here~=drawn_atom
+     then
+      goto next
+     end
+    else
+     if
+      atom_here~=air and
+      not overdraw
+     then
+      goto next
+     end
+    end
+    sset(x,y,atom)
+    ::next::
+   end
+  end
  end
 end
 
@@ -448,10 +456,13 @@ simulation_screen.draw()
  )
 
  -- draw the cursor.
+ local brw,brh=
+  brush[1],brush[2]
  -- compute width and height
  -- based on screen and board
  -- sizes.
- local cw,ch=128/bw,128/bh
+ local cw,ch=
+  128/bw,128/bh
  -- compute screen position
  -- based on logical position
  -- and cursor size.
@@ -460,7 +471,7 @@ simulation_screen.draw()
  -- draw it as a black outline.
  rect(
   csx-1,csy-1,
-  csx+cw,csy+ch,
+  csx+cw*brw,csy+ch*brh,
   0
  )
 end

@@ -281,6 +281,7 @@ end
 -- simulation
 
 simulation_screen={}
+tick=-1
 
 function
 simulation_screen.update()
@@ -300,6 +301,13 @@ simulation_screen.update()
  local bug=bug
  local oil=oil
  local sand=sand
+
+ local time_speed=time_speed
+ local t=tick
+ if(time_speed==nil)goto after
+ t=(t+1)%time_speed
+ tick=t
+ if(t~=0)goto after
 
  -- simulate each atom.
  for y=0,bh-1 do
@@ -365,6 +373,8 @@ simulation_screen.update()
  poke(0x5f55,0x00)
  rectfill(64,0,128,64,0)
  poke(0x5f55,0x60)
+
+ ::after::
 
  -- respond to player input.
 
@@ -647,7 +657,7 @@ options={
   label='  time',
   selected=1,
   {label='  fast',value=1},
-  {label='  slow',value=2},
+  {label='  slow',value=3},
   {label='  stop',value=nil
  },
  },

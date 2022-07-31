@@ -226,7 +226,7 @@ brush=nil
 -- bugs will be overwritten;
 -- otherwise, only air will be.
 -- valid values: true, false
-drawover=nil
+overdraw=nil
 
 -- if true, erasing only works
 -- on the currently selected
@@ -380,22 +380,39 @@ simulation_screen.update()
   mid(0,cy,bh-1)
  cursor_x,cursor_y=cx,cy
 
+ local atom_to_put
+ local atom=sget(cx,cy)
  -- 🅾️ replaces the atom under
  -- the cursor with the
- -- selected atom, unless:
- -- - overdraw is enabled and
- --   the atom under the cursor
- --   is bug;
- -- - or underdraw is enabled
- --   and the atom under the
- --   cursor is not air.
- local atom=sget(cx,cy)
+ -- selected atom if:
+ -- - overdraw is enabled; or
+ -- - the atom is air.
  if
   btn(🅾️) and
-  ((drawover and atom~=bug) or
-   atom==air)
+  (overdraw or atom==air)
  then
-  sset(cx,cy,drawn_atom)
+  atom_to_put=drawn_atom
+ end
+ -- ❎ replaces the atom under
+ -- the cursor with air if:
+ -- - erase_type is enabled and
+ --   the atom is the same as
+ --   the selected atom; or
+ -- - erase_type is disabled.
+ if
+  btn(❎) and
+  (not erase_type or
+   atom==drawn_atom)
+ then
+  atom_to_put=air
+ end
+ -- neither 🅾️ nor ❎ can
+ -- replace bug.
+ if
+  atom_to_put~=nil and
+  atom~=bug
+ then
+  sset(cx,cy,atom_to_put)
  end
 end
 
@@ -742,7 +759,7 @@ update_options()
  local o=options
  drawn_atom   =get_value(o[1])
  brush        =get_value(o[2])
- drawover     =get_value(o[3])
+ overdraw     =get_value(o[3])
  erase_type   =get_value(o[4])
  cursor_check =get_value(o[5])
  time_speed   =get_value(o[6])

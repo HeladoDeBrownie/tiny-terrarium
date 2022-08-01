@@ -612,6 +612,12 @@ bump(atom1,atom2,dig)
   flr(rnd(120))==0
  then
   return plant,plant
+ -- egg sinks in water.
+ elseif
+  atom1==egg and
+  atom2==water
+ then
+  return atom2,atom1
  end
 end
 -->8

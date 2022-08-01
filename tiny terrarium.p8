@@ -299,6 +299,7 @@ simulation_screen.update()
  local clay=clay
  local egg=egg
  local bug=bug
+ local plant=plant
  local oil=oil
  local sand=sand
 
@@ -356,6 +357,16 @@ simulation_screen.update()
       true
      )
     end
+   -- plant may grow in a
+   -- random direction if there
+   -- is water there.
+   elseif atom==plant then
+    local sidex=flr(rnd(3))-1
+    local sidey=flr(rnd(3))-1
+    move(
+     x,y,
+     x+sidex,y+sidey
+    )
    -- clay falls straight down.
    elseif atom==clay then
     move(x,y,x,y+1)
@@ -572,8 +583,12 @@ bump(atom1,atom2,dig)
   elseif atom2==air then
    return atom2,atom1
   end
- -- anything moves through air.
- elseif atom2==air then
+ -- anything but plant moves
+ -- through air.
+ elseif
+  atom2==air and
+  atom1~=plant
+ then
   return atom2,atom1
  -- water and sand make clay.
  elseif
@@ -590,9 +605,10 @@ bump(atom1,atom2,dig)
   atom2==oil
  then
   return oil,water
+ -- plant may consume water.
  elseif
-  atom1==water and
-  atom2==plant and
+  atom1==plant and
+  atom2==water and
   flr(rnd(120))==0
  then
   return plant,plant

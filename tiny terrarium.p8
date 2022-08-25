@@ -569,8 +569,8 @@ move(x1,y1,x2,y2,dig)
    atom2,atom1
  -- water and sand make clay.
  elseif
-  (atom1==water and
-   atom2==sand)
+  (atom2==sand and
+   atom1==water)
   or
   (atom1==sand and
    atom2==water)

@@ -60,7 +60,7 @@ __lua__
 -- it, or else to attempt a
 -- special reaction. these
 -- reactions are determined by
--- the bump function.
+-- the move function.
 
 -- tile:
 -- a place on the board. it is
@@ -253,7 +253,7 @@ time_speed=nil
 -- can't individually change,
 -- but in bounds atoms can
 -- interact with them. see the
--- move and bump functions.
+-- move function.
 -- valid values are any defined
 -- atoms.
 out_of_bounds=nil
@@ -490,17 +490,17 @@ end
 -- move the atom at (x1,y1) to
 -- (x2,y2). the result of this
 -- depends on the interactions
--- specified by the bump
--- function, but broadly
+-- specified by the logic for
+-- each element, but broadly
 -- speaking either ends up
 -- changing the two atoms or
 -- doing nothing.
 -- precondition: (x1,y1) is in
 -- bounds.
 -- return whether the move
--- succeeded, i.e., the bump
--- function specified an
--- interaction and it was done.
+-- succeeded, i.e., there was
+-- a specific interaction that
+-- was performed.
 function
 move(x1,y1,x2,y2,dig)
  -- moving behaves a little
@@ -530,10 +530,74 @@ move(x1,y1,x2,y2,dig)
   sget(x2,y2) or
   out_of_bounds
 
- -- determine what the atoms
- -- change into.
- local new_atom1,new_atom2=
-  bump(atom1,atom2,dig)
+ -- given the source atom and
+ -- the destination atom,
+ -- compute the atoms they turn
+ -- into when the former i
+ -- moved into the latter, or
+ -- nil if there is no change.
+ -- this relationship is not
+ -- necessarily symmetric; even
+ -- with the same two types of
+ -- atom, moving one into the
+ -- other doesn't necessarily do
+ -- the same thing as the other
+ -- way around.
+ local new_atom1,new_atom2
+ -- bugs can move through most
+ -- things if actively digging.
+ -- they may also lay eggs.
+ if atom1==bug then
+  if dig and atom2~=block then
+   new_atom1,new_atom2=
+    atom2==air and
+    flr(rnd(120))==0 and
+    egg or
+    atom2,
+    atom1
+  elseif atom2==air then
+   new_atom1,new_atom2=
+    atom2,atom1
+  end
+ -- anything but plant moves
+ -- through air.
+ elseif
+  atom2==air and
+  atom1~=plant
+ then
+  new_atom1,new_atom2=
+   atom2,atom1
+ -- water and sand make clay.
+ elseif
+  (atom1==water and
+   atom2==sand)
+  or
+  (atom1==sand and
+   atom2==water)
+ then
+  new_atom1,new_atom2=air,clay
+ -- oil rises on water.
+ elseif
+  atom1==water and
+  atom2==oil
+ then
+  new_atom1,new_atom2=oil,water
+ -- plant may consume water.
+ elseif
+  atom1==plant and
+  atom2==water and
+  flr(rnd(120))==0
+ then
+  new_atom1,new_atom2=
+   plant,plant
+ -- egg sinks in water.
+ elseif
+  atom1==egg and
+  atom2==water
+ then
+  new_atom1,new_atom2=
+   atom2,atom1
+ end
 
  -- if there's no reaction, do
  -- nothing.
@@ -552,73 +616,6 @@ move(x1,y1,x2,y2,dig)
  end
 
  return true
-end
-
--- given a source atom and a
--- destination atom, return the
--- atoms they turn into when
--- the former is moved into
--- the latter, or nil if there
--- is no change.
--- this relationship is not
--- necessarily symmetric; even
--- with the same two types of
--- atom, moving one into the
--- other doesn't necessarily do
--- the same thing as the other
--- way around.
-function
-bump(atom1,atom2,dig)
- -- bugs can move through most
- -- things if actively digging.
- -- they may also lay eggs.
- if atom1==bug then
-  if dig and atom2~=block then
-   return
-    atom2==air and
-    flr(rnd(120))==0 and
-    egg or
-    atom2,
-    atom1
-  elseif atom2==air then
-   return atom2,atom1
-  end
- -- anything but plant moves
- -- through air.
- elseif
-  atom2==air and
-  atom1~=plant
- then
-  return atom2,atom1
- -- water and sand make clay.
- elseif
-  (atom1==water and
-   atom2==sand)
-  or
-  (atom1==sand and
-   atom2==water)
- then
-  return air,clay
- -- oil rises on water.
- elseif
-  atom1==water and
-  atom2==oil
- then
-  return oil,water
- -- plant may consume water.
- elseif
-  atom1==plant and
-  atom2==water and
-  flr(rnd(120))==0
- then
-  return plant,plant
- -- egg sinks in water.
- elseif
-  atom1==egg and
-  atom2==water
- then
-  return atom2,atom1
- end
 end
 -->8
 -- options

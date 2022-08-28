@@ -709,8 +709,8 @@ options={
  {
   label=' erase',
   selected=1,
-  {label='  type',value=true},
   {label='   any',value=false},
+  {label='  type',value=true},
  },
  {
   label='cursor',

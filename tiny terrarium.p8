@@ -176,10 +176,13 @@ water= 1 -- dark blue
 clay = 4 -- brown
 block= 5 -- dark gray
 egg  = 6 -- light gray
-bug  = 8 -- red
+fire1= 8 -- red
+fire2= 9 -- orange
+fire3=10 -- yellow
 plant=11 -- light green
 air  =12 -- light blue
 oil  =13 -- lavender
+bug  =14 -- pink
 sand =15 -- tan
 -->8
 -- state
@@ -298,9 +301,12 @@ simulation_screen.update()
  local water=water
  local clay=clay
  local egg=egg
- local bug=bug
+ local fire1=fire1
+ local fire2=fire2
+ local fire3=fire3
  local plant=plant
  local oil=oil
+ local bug=bug
  local sand=sand
 
  local time_speed=time_speed
@@ -375,6 +381,21 @@ simulation_screen.update()
    elseif atom==sand then
     local side=flr(rnd(3))-1
     move(x,y,x+side,y+1)
+   -- fire rises, sets things
+   -- on fire, and may decay.
+   elseif
+    atom==fire3 or
+    atom==fire2 or
+    atom==fire1
+   then
+    local side=flr(rnd(3))-1
+    local decay=flr(rnd(2))==0
+    if decay then
+     local atom_=atom-1
+     if(atom_==7)atom_=air
+     sset(x,y,atom_)
+    end
+    move(x,y,x+side,y-1)
    end
   end
  end
@@ -597,6 +618,19 @@ move(x1,y1,x2,y2,dig)
  then
   new_atom1,new_atom2=
    atom2,atom1
+ -- fire catches onto flammable
+ -- substances.
+ elseif
+  (atom1==fire3 or
+   atom1==fire2 or
+   atom1==fire1) and
+  (atom2==plant or
+   atom2==oil or
+   atom2==egg or
+   atom2==bug)
+ then
+  new_atom1,new_atom2=
+   atom1,fire3
  end
 
  -- if there's no reaction, do
@@ -648,6 +682,7 @@ options={
   {label='   \fdoil',value=13},
   {label=' \fbplant',value=11},
   {label='   \f6egg',value= 6},
+  {label='  \fafire',value=10},
  },
  {
   label=' brush',

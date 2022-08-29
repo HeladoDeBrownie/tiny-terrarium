@@ -280,6 +280,28 @@ set_screen(screen)
  _update=screen.update
  _draw=screen.draw
 end
+
+input_lock={}
+
+function btn_(b)
+ local held=btn(b)
+ if not held then
+  input_lock[b]=nil
+ end
+ return
+  held and
+  not input_lock[b]
+end
+
+function btnp_(b)
+ local held=btnp(b)
+ if not held then
+  input_lock[b]=nil
+ end
+ return
+  held and
+  not input_lock[b]
+end
 -->8
 -- simulation
 
@@ -722,8 +744,8 @@ options={
  {
   label='cursor',
   selected=1,
-  {label='  fast',value=btn},
-  {label='  slow',value=btnp},
+  {label='  fast',value=btn_},
+  {label='  slow',value=btnp_},
  },
  {
   label='  time',
@@ -747,10 +769,15 @@ function
 options_screen.update()
  -- 🅾️ and ❎ return to the
  -- simulation screen.
- if
-  btn(🅾️) or
-  btn(❎)
- then
+ local 🅾️_held=btn(🅾️)
+ local ❎_held=btn(❎)
+ if 🅾️_held or ❎_held then
+  if 🅾️_held then
+   input_lock[🅾️]=true
+  end
+  if ❎_held then
+   input_lock[❎]=true
+  end
   update_options()
   set_screen(simulation_screen)
   return

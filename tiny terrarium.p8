@@ -388,14 +388,21 @@ simulation_screen.update()
     atom==fire2 or
     atom==fire1
    then
-    local side=flr(rnd(3))-1
+    local sidex=flr(rnd(3))-1
+    local sidey=flr(rnd(3))-1
     local decay=flr(rnd(2))==0
     if decay then
      local atom_=atom-1
      if(atom_==7)atom_=air
      sset(x,y,atom_)
     end
-    move(x,y,x+side,y-1)
+    if
+     sget(x+sidex,y+sidey)~=air
+    then
+     move(x,y,x+sidex,y+sidey)
+    else
+     move(x,y,x+sidex,y-1)
+    end
    end
   end
  end

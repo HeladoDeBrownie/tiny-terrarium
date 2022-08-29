@@ -745,15 +745,12 @@ options_screen={}
 
 function
 options_screen.update()
- -- any button but an arrow
- -- returns to the simulation
- -- screen.
+ -- 🅾️ and ❎ return to the
+ -- simulation screen.
  if
   btn(🅾️) or
-  btn(❎) or
-  btn(6)
+  btn(❎)
  then
-  poke(0x5f30,1)
   update_options()
   set_screen(simulation_screen)
   return
@@ -778,7 +775,7 @@ options_screen.draw()
  -- large enough to accommodate
  -- however many options there
  -- are, and centered.
- local w,h=80,8+(#options+4)*6
+ local w,h=80,8+(#options+6)*6
  local x,y=
   (128-w)/2,(128-h)/2
  camera(-x,-y)
@@ -797,9 +794,11 @@ options_screen.draw()
  end
  print([[
 
-(hold pause to
-open the pico-8
-pause menu.)
+(press pause
+again to open
+the pico-8 pause
+menu, or 🅾️ or
+❎ to go back.)
 ]], 7)
  print(
   '      <        >',

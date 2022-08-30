@@ -701,17 +701,38 @@ options={
  {
   label='  atom',
   selected=1,
-  {label=' \f5block',value= 5},
-  {label='  \f4clay',value= 4},
-  {label='  \ffsand',value=15},
+  {
+   label=' \f5block',
+   value=block,
+  },
+  {
+   label='  \f4clay',
+   value=clay,
+  },
+  {
+   label='  \ffsand',
+   value=sand,
+  },
   {
    label=' \#c\f1water',
-   value=1,
+   value=water,
   },
-  {label='   \fdoil',value=13},
-  {label=' \fbplant',value=11},
-  {label='   \f6egg',value= 6},
-  {label='  \fafire',value=10},
+  {
+   label='   \fdoil',
+   value=oil,
+  },
+  {
+   label=' \fbplant',
+   value=plant,
+  },
+  {
+   label='   \f6egg',
+   value=egg,
+  },
+  {
+   label='  \fafi\f9r\f8e',
+   value=fire3,
+  },
  },
  {
   label=' brush',

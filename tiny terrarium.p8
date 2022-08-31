@@ -1,5 +1,5 @@
 pico-8 cartridge // http://www.pico-8.com
-version 36
+version 37
 __lua__
 -- tiny terrarium
 -- by helado de brownie
@@ -342,25 +342,67 @@ simulation_screen.update()
  for y=0,bh-1 do
   for x=0,bw-1 do
    local atom=sget(x,y)
-   -- water and oil fall
-   -- straight down if able, or
-   -- else move left or right
-   -- or stay still at random.
-   if
-    atom==water or
-    atom==oil
-   then
-    if not move(x,y,x,y+1) then
+   -- water falls straight down
+   -- if able, or else moves
+   -- left or right or stays
+   -- still at random.
+   -- it passes through air and
+   -- oil, and combines with
+   -- sand into clay.
+   if atom==water then
+    local function
+    react(atom1,atom2)
+     if
+      atom2==air or
+      atom2==oil
+     then
+      return atom2,atom1
+     elseif atom2==sand then
+      return air,clay
+     end
+    end
+    if
+     not move(x,y,x,y+1,react)
+    then
      local side=flr(rnd(3))-1
-     move(x,y,x+side,y)
+     move(x,y,x+side,y,react)
+    end
+   -- oil falls straight down
+   -- if able, or else moves
+   -- left or right or stays
+   -- still at random.
+   -- it passes through air.
+   elseif atom==oil then
+    local function
+    react(atom1,atom2)
+     if atom2==air then
+      return atom2,atom1
+     end
+    end
+
+    if
+     not move(x,y,x,y+1,react)
+    then
+     local side=flr(rnd(3))-1
+     move(x,y,x+side,y,react)
     end
    -- egg falls straight down,
    -- left, or right at random,
    -- or may hatch.
    elseif atom==egg then
+    local function
+    react(atom1,atom2)
+     if
+      atom2==water or
+      atom2==oil
+     then
+      return atom2,atom1
+     end
+    end
+
     local side=flr(rnd(3))-1
     local moved=
-     move(x,y,x+side,y+1)
+     move(x,y,x+side,y+1,react)
     if
      not moved and
      flr(rnd(3600))==0
@@ -373,8 +415,34 @@ simulation_screen.update()
    -- direction. it may lay an
    -- egg if there's room.
    elseif atom==bug then
+    local function
+    react_fall(atom1,atom2)
+     if atom2==air then
+      return atom2,atom1
+     end
+    end
+
+    local function
+    react_dig(atom1,atom2)
+     if atom2==block then
+      return
+     end
+
+     local atom2_=atom2
+     if
+      atom2==air and
+      flr(rnd(120))==0
+     then
+      atom2_=egg
+     end
+    end
+
     if
-     not move(x,y,x,y+1) and
+     not move(
+      x,y,
+      x,y+1,
+      react_fall
+     ) and
      flr(rnd(15))==0
     then
      local sidex=flr(rnd(3))-1
@@ -382,27 +450,61 @@ simulation_screen.update()
      move(
       x,y,
       x+sidex,y+sidey,
-      true
+      react_dig
      )
     end
    -- plant may grow in a
    -- random direction if there
    -- is water there.
    elseif atom==plant then
+    local function
+    react(atom1,atom2)
+     if
+      atom2==water and
+      flr(rnd(120))==0
+     then
+      return atom1,atom1
+     end
+    end
+
     local sidex=flr(rnd(3))-1
     local sidey=flr(rnd(3))-1
     move(
      x,y,
-     x+sidex,y+sidey
+     x+sidex,y+sidey,
+     react
     )
    -- clay falls straight down.
    elseif atom==clay then
-    move(x,y,x,y+1)
+    local function
+    react(atom1,atom2)
+     if
+      atom2==air or
+      atom2==water or
+      atom2==oil
+     then
+      return atom2,atom1
+     end
+    end
+
+    move(x,y,x,y+1,react)
    -- sand falls straight down,
    -- left, or right at random.
    elseif atom==sand then
+    local function
+    react(atom1,atom2)
+     if
+      atom2==air or
+      atom2==oil
+     then
+      return atom2,atom1
+     elseif atom2==water then
+      return air,clay
+     end
+    end
+
     local side=flr(rnd(3))-1
-    move(x,y,x+side,y+1)
+    move(x,y,x+side,y+1,react)
    -- fire rises, sets things
    -- on fire, and may decay.
    elseif
@@ -410,6 +512,18 @@ simulation_screen.update()
     atom==fire2 or
     atom==fire1
    then
+    local function
+    react(atom1,atom2)
+     if
+      atom2==plant or
+      atom2==oil or
+      atom2==egg or
+      atom2==bug
+     then
+      return atom1,fire3
+     end
+    end
+
     local sidex=flr(rnd(3))-1
     local sidey=flr(rnd(3))-1
     local decay=flr(rnd(2))==0
@@ -421,9 +535,17 @@ simulation_screen.update()
     if
      sget(x+sidex,y+sidey)~=air
     then
-     move(x,y,x+sidex,y+sidey)
+     move(
+      x,y,
+      x+sidex,y+sidey,
+      react
+     )
     else
-     move(x,y,x+sidex,y-1)
+     move(
+      x,y,
+      x+sidex,y-1,
+      react
+     )
     end
    end
   end
@@ -552,7 +674,7 @@ end
 -- a specific interaction that
 -- was performed.
 function
-move(x1,y1,x2,y2,dig)
+move(x1,y1,x2,y2,react)
  -- moving behaves a little
  -- differently depending on
  -- whether the destination is
@@ -580,87 +702,11 @@ move(x1,y1,x2,y2,dig)
   sget(x2,y2) or
   out_of_bounds
 
- -- given the source atom and
- -- the destination atom,
- -- compute the atoms they turn
- -- into when the former i
- -- moved into the latter, or
- -- nil if there is no change.
- -- this relationship is not
- -- necessarily symmetric; even
- -- with the same two types of
- -- atom, moving one into the
- -- other doesn't necessarily do
- -- the same thing as the other
- -- way around.
- local new_atom1,new_atom2
- -- bugs can move through most
- -- things if actively digging.
- -- they may also lay eggs.
- if atom1==bug then
-  if dig and atom2~=block then
-   new_atom1,new_atom2=
-    atom2==air and
-    flr(rnd(120))==0 and
-    egg or
-    atom2,
-    atom1
-  elseif atom2==air then
-   new_atom1,new_atom2=
-    atom2,atom1
-  end
- -- anything but plant moves
- -- through air.
- elseif
-  atom2==air and
-  atom1~=plant
- then
-  new_atom1,new_atom2=
-   atom2,atom1
- -- water and sand make clay.
- elseif
-  (atom2==sand and
-   atom1==water)
-  or
-  (atom1==sand and
-   atom2==water)
- then
-  new_atom1,new_atom2=air,clay
- -- oil rises on water.
- elseif
-  atom1==water and
-  atom2==oil
- then
-  new_atom1,new_atom2=oil,water
- -- plant may consume water.
- elseif
-  atom1==plant and
-  atom2==water and
-  flr(rnd(120))==0
- then
-  new_atom1,new_atom2=
-   plant,plant
- -- egg sinks in water.
- elseif
-  atom1==egg and
-  atom2==water
- then
-  new_atom1,new_atom2=
-   atom2,atom1
- -- fire catches onto flammable
- -- substances.
- elseif
-  (atom1==fire3 or
-   atom1==fire2 or
-   atom1==fire1) and
-  (atom2==plant or
-   atom2==oil or
-   atom2==egg or
-   atom2==bug)
- then
-  new_atom1,new_atom2=
-   atom1,fire3
- end
+ -- use the supplied reaction
+ -- logic to determine the
+ -- result of the exchange.
+ local new_atom1,new_atom2=
+  react(atom1,atom2)
 
  -- if there's no reaction, do
  -- nothing.

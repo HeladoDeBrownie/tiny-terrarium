@@ -523,7 +523,9 @@ simulation_screen.update()
    then
     local function
     react(atom1,atom2)
-     if
+     if atom2==air then
+      return atom2,atom1
+     elseif
       atom2==plant or
       atom2==oil or
       atom2==egg or

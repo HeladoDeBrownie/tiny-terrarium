@@ -389,10 +389,13 @@ simulation_screen.update()
    -- egg falls straight down,
    -- left, or right at random,
    -- or may hatch.
+   -- it passes through air,
+   -- water, and oil.
    elseif atom==egg then
     local function
     react(atom1,atom2)
      if
+      atom2==air or
       atom2==water or
       atom2==oil
      then
@@ -414,6 +417,10 @@ simulation_screen.update()
    -- or may move in a random
    -- direction. it may lay an
    -- egg if there's room.
+   -- it passes through air
+   -- when falling, and
+   -- anything but block when
+   -- moving with purpose.
    elseif atom==bug then
     local function
     react_fall(atom1,atom2)
@@ -435,6 +442,8 @@ simulation_screen.update()
      then
       atom2_=egg
      end
+
+     return atom2_,atom1
     end
 
     if

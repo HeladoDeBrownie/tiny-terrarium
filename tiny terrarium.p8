@@ -1,47 +1,104 @@
 pico-8 cartridge // http://www.pico-8.com
-version 37
+version 38
 __lua__
 -- tiny terrarium
 -- by helado de brownie
 
--- this source code is best
--- read in the pico-8 code
--- editor. try the education
--- edition if you don't have
--- access to it otherwise:
+-- this source code is designed
+-- to be read in the pico-8
+-- code editor. if you don't
+-- otherwise have access to it,
+-- try the education edition:
 -- https://www.pico-8-edu.com/
+-->8
+-- style
+-- this section describes the
+-- stylistic conventions used
+-- in the source code.
 
--- because of the limited
--- visible line length, lines
--- are broken after 31
--- characters. function
--- declarations are written
--- with the function keyword on
--- its own line to make more
--- room for the name and
--- parameter list.
+-- line length:
+-- each line must be at most 31
+-- columns wide. this means all
+-- code can be read and written
+-- without having to scroll the
+-- screen horizontally. some
+-- glyphs, such as 🅾️ and ❎,
+-- are two columns wide; what
+-- matters is the total width,
+-- not the number of glyphs.
+
+-- breaking lines:
+-- lines may be broken after
+-- symbols, such as = and +.
+-- the part after the break
+-- must be indented one more
+-- place. if the line is broken
+-- immediately after paired
+-- syntax, the pair must be on
+-- the same indent. e.g.:
+--
+--  print(foo + bar * baz)
+--
+--  print(foo +
+--   bar * baz)
+--
+--  print(
+--   foo + bar + baz
+--  )
+
+-- multi-line table literals:
+-- when a table literal is
+-- broken across lines, each
+-- line should generally
+-- correspond to one field,
+-- which ends in a comma. this
+-- means not having to edit
+-- previous lines when adding
+-- new fields. e.g.:
+--
+--  local t={
+--   a=0,
+--   b=1,
+--   c=2,
+--  }
+
+-- function declarations:
+-- a line break must go between
+-- the function keyword and the
+-- name of the function. this
+-- ensures there's enough room
+-- to comfortably fit the name
+-- and parameters on the same
+-- line in most cases. e.g.:
+--
+--  function
+--  foo(argument1,argument2)
+--   -- implementation
+--  end
 -->8
 -- glossary
--- this is a comment-only tab
--- explaining the terminology
--- used throughout the code.
+-- this section lists the terms
+-- used in the source code and
+-- in the game, in alphabetical
+-- order.
 
 -- atom:
--- an individual particle that
--- is independently simulated.
--- every atom is represented by
--- a pico-8 color, or,
--- equivalently, an integer
--- from 0 to 15 inclusive. the
--- game state is completely
--- determined by what colors
--- are in what places.
--- atoms come in multiple types
--- that have their own special
--- interactions with other
--- atoms. these are described
--- by the comments in the
--- _update function.
+-- an independently simulated
+-- particle. every atom has an
+-- element, which determines
+-- how it behaves. atoms have
+-- no identity; every atom of a
+-- given element behaves the
+-- same as every other. the
+-- color of an atom is based
+-- completely on its element.
+-- atoms are just a convenient
+-- abstraction; they aren't
+-- represented directly. the
+-- "movement" of an "atom" is
+-- just the changing of the
+-- element associated with one
+-- or more tiles.
 
 -- board:
 -- the place where the
@@ -52,15 +109,35 @@ __lua__
 -- exactly one atom, no more or
 -- less.
 
+-- element:
+-- a type of atom. the element
+-- of an atom determines how it
+-- behaves. these behaviors are
+-- implemented in the
+-- simulation_screen.update
+-- function's main loop. each
+-- element directly corresponds
+-- to a unique pico-8 color, or
+-- equivalently, an integer at
+-- least 0 and less than 16.
+
 -- move:
--- to move an atom from one
--- tile to an adjacent tile
--- means to swap it with air if
--- the latter tile has air in
--- it, or else to attempt a
--- special reaction. these
--- reactions are determined by
--- the move function.
+-- to move from a source tile
+-- to a destination tile means
+-- to attempt an interaction
+-- between the atoms in those
+-- tiles. the result of the
+-- interaction is determined by
+-- the source atom's element.
+-- often, the result of a move
+-- is that the tiles swap what
+-- atoms are in them. this is
+-- the case with clay and air,
+-- for example. if there is no
+-- specific interaction between
+-- the two elements, the move
+-- is said to fail, and the
+-- atoms remain unchanged.
 
 -- tile:
 -- a place on the board. it is
@@ -82,85 +159,91 @@ __lua__
 -- checked.
 -->8
 -- optimization
--- this is a comment-only tab
--- explaining the optimization
--- principles used throughout
--- the code.
+-- this section describes the
+-- strategies used to make the
+-- game run at an acceptable
+-- frame rate.
 
--- because most computations in
--- this code happen potentially
--- hundreds of times per frame,
--- it's very important to do
--- things as cheap as possible.
--- the primary way that pico-8
--- makes it easy to follow
--- performance properties is
--- using its built-in cpu meter
--- that can be toggled by
--- pressing ctrl+p while a cart
--- is running. the middle and
--- right numbers should read as
--- less than 1.00 as much of
--- the time as possible.
--- some optimization principles
--- are used throughout the
--- source code, which are
--- explained here.
+-- at a 32x32 board size, there
+-- are 1024 atoms that need to
+-- be simulated each frame.
+-- this means there's very
+-- little time to waste in the
+-- simulation logic, which is
+-- in simulation_screen.update.
 
--- use local variables for
--- repeated lookups.
--- looking up global variables
--- is significantly slower than
--- looking up locals, even when
--- no other computations are
--- involved. a function can be
--- sped up without changing the
--- rest of its code just by
--- inserting a local definition
--- at the beginning that has
--- the same name as a global
--- that is referred to more
--- than once, and is set to the
--- value of that global. e.g.,
+-- the most important metric of
+-- speed is cpu time. if the
+-- game is over 100% cpu, then
+-- it can't reliably capture
+-- the pause button, which is
+-- how the options screen is
+-- accessed.
+
+-- while in the game, press
+-- ctrl+p to open the cpu
+-- monitor. if the middle and
+-- right numbers read as less
+-- than 1.00, then the game is
+-- running at an acceptable
+-- speed.
+
+-- the following strategies are
+-- used to write code that uses
+-- less cpu time.
+
+-- cache global variables:
+-- accessing global variables
+-- is slower than doing so with
+-- local ones. if a global is
+-- to be used more than once in
+-- a function, it can save time
+-- to assign its value to a
+-- local and use that instead.
+-- if the global is a constant,
+-- i.e., never needs to be
+-- written back to, then
+-- speeding up the code can be
+-- as simple as, e.g.,
+--
 --  local air=air
+--
+-- without any other changes.
 
--- compute everything once.
--- nontrivial computations such
--- as performing arithmetic or
--- comparisons on values tend
--- to be slower than reading
--- local variables or
--- parameters. functions should
--- be designed so that they can
--- accept information that is
--- already known or otherwise
--- use preconditions, i.e.,
--- assume the inputs are valid
--- instead of checking them
--- when it is known ahead of
--- time that the function will
--- only be called on valid
--- inputs.
+-- reuse information:
+-- if the result of a check or
+-- an expression is needed in
+-- more than one place, compute
+-- it once and then pass that
+-- information on, e.g., by
+-- passing it as an argument to
+-- the function that needs it.
+-- if even this would be too
+-- expensive, design functions
+-- so that they assume ahead of
+-- time anything they need to,
+-- and so don't need to check;
+-- instead, the call site only
+-- calls them if it's sure it's
+-- safe to do so.
 
--- inline.
--- writing separate functions
--- is useful for the sake of
--- code reuse, but calling them
--- has a cost that is not
--- always worth the tradeoff.
--- avoid calling functions when
--- it would noticeably slow
--- down the code, and instead
--- write the logic at the site
--- it's used.
--- this principle in particular
--- should only be applied when
--- it leads to *observable*
--- performance increase, in
--- order to offset its tendency
--- to make logic harder to
--- follow or make code harder
--- to maintain.
+-- inline:
+-- while writing functions as
+-- separate units is extremely
+-- useful for organization,
+-- calling functions has a cost
+-- that may not be worth the
+-- performance tradeoff. in
+-- these cases, and only in
+-- these cases, consider taking
+-- out any functions that are
+-- too expensive and putting
+-- their logic at the call
+-- sites instead. in some cases
+-- this may lead to duplicated
+-- logic, which also incurs a
+-- maintenance cost, so use
+-- this sparingly.
 -->8
 -- constants
 
@@ -283,7 +366,8 @@ end
 
 input_lock={}
 
-function btn_(b)
+function
+btn_(b)
  local held=btn(b)
  if not held then
   input_lock[b]=nil
@@ -293,7 +377,8 @@ function btn_(b)
   not input_lock[b]
 end
 
-function btnp_(b)
+function
+btnp_(b)
  local held=btnp(b)
  if not held then
   input_lock[b]=nil

@@ -139,6 +139,16 @@ __lua__
 -- is said to fail, and the
 -- atoms remain unchanged.
 
+-- out of bounds (oob):
+-- the area outside the board.
+-- any coordinate that doesn't
+-- correspond to a real tile is
+-- out of bounds. oob atoms can
+-- be interacted with but never
+-- changed individually. all of
+-- them can be changed at once
+-- in the options.
+
 -- tile:
 -- a place on the board. it is
 -- identified by a pair of
@@ -295,36 +305,38 @@ cursor_x,cursor_y=
 -- loads and when the options
 -- screen is closed.
 
--- the atom that will be placed
--- when the player presses 🅾️.
--- valid values are any defined
--- atoms.
-drawn_atom=nil
+-- the element that will be
+-- placed when the player
+-- presses 🅾️.
+-- valid values are all defined
+-- elements.
+draw_element=nil
 
 -- the size of the area that
 -- the player draws each frame.
 -- valid values are sequences
--- of 2 elements, each a
--- positive integer.
+-- of two positive integers no
+-- larger than the respective
+-- board dimensions.
 brush=nil
 
--- if true, all atoms except
--- bugs will be overwritten;
--- otherwise, only air will be.
+-- if true, all elements except
+-- bug will be overwritten by
+-- drawing; otherwise, only air
+-- will be.
 -- valid values: true, false
 overdraw=nil
 
 -- if true, erasing only works
 -- on the currently selected
--- atom type (drawn_atom).
+-- element (draw_element).
 -- valid values: true, false
-erase_type=nil
+erase_selected=nil
 
--- the function used to check
--- whether the cursor should
--- move.
+-- the function used to receive
+-- input from the player.
 -- example values: btn, btnp
-cursor_check=nil
+get_input=nil
 
 -- how fast the simulation
 -- proceeds. larger is slower.
@@ -333,15 +345,15 @@ cursor_check=nil
 -- integers and nil.
 time_speed=nil
 
--- the atom that fills the out
--- of bounds area. these atoms
--- aren't affected by time and
--- can't individually change,
--- but in bounds atoms can
--- interact with them. see the
--- move function.
--- valid values are any defined
--- atoms.
+-- the element that fills the
+-- out of bounds (oob) area.
+-- oob atoms aren't affected by
+-- time and can't individually
+-- change, but in bounds atoms
+-- can interact with them. see
+-- the move function.
+-- valid values are all defined
+-- elements.
 out_of_bounds=nil
 -->8
 -- setup
@@ -658,7 +670,7 @@ simulation_screen.update()
  -- respond to player input.
 
  -- ⬅️➡️⬆️⬇️ move the cursor.
- local btn=cursor_check
+ local btn=get_input
  local cx,cy=cursor_x,cursor_y
  local brw,brh=
   brush[1],brush[2]
@@ -679,12 +691,13 @@ simulation_screen.update()
  --   is air.
  -- ❎ replaces the atom under
  -- the cursor with air if:
- -- - erase_type is enabled and
- --   the atom is the same as
- --   the selected atom; or
- -- - erase_type is disabled.
+ -- - erase_selected is enabled
+ --   and the atom is the same
+ --   as the selected atom; or
+ -- - erase_selected is
+ --   disabled.
  local atom
- if(btn(🅾️))atom=drawn_atom
+ if(btn(🅾️))atom=draw_element
  if(btn(❎))atom=air
  if atom~=nil then
   for x=cx,cx+brw-1 do
@@ -693,8 +706,8 @@ simulation_screen.update()
     if(atom_here==bug)goto next
     if atom==air then
      if
-      erase_type and
-      atom_here~=drawn_atom
+      erase_selected and
+      atom_here~=draw_element
      then
       goto next
      end
@@ -841,7 +854,7 @@ end
 options={
  selected=1,
  {
-  label='  atom',
+  label='element',
   selected=1,
   {
    label=' \f5block',
@@ -877,7 +890,7 @@ options={
   },
  },
  {
-  label=' brush',
+  label='  brush',
   selected=1,
   {label='   1x1',value={1,1}},
   {label='   2x2',value={2,2}},
@@ -893,25 +906,25 @@ options={
   },
  },
  {
-  label='  draw',
+  label='   draw',
   selected=1,
   {label='  over',value=true},
   {label=' under',value=false},
  },
  {
-  label=' erase',
+  label='  erase',
   selected=1,
   {label='   any',value=false},
-  {label='  type',value=true},
+  {label='select',value=true},
  },
  {
-  label='cursor',
+  label=' cursor',
   selected=1,
   {label='  fast',value=btn_},
   {label='  slow',value=btnp_},
  },
  {
-  label='  time',
+  label='   time',
   selected=1,
   {label='  fast',value=1},
   {label='  slow',value=3},
@@ -919,7 +932,7 @@ options={
  },
  },
  {
-  label='  edge',
+  label='   edge',
   selected=1,
   {label='   \fcair',value=12},
   {label=' \f5block',value= 5},
@@ -965,19 +978,19 @@ options_screen.draw()
  -- large enough to accommodate
  -- however many options there
  -- are, and centered.
- local w,h=80,8+(#options+6)*6
+ local w,h=84,8+(#options+6)*6
  local x,y=
   (128-w)/2,(128-h)/2
  camera(-x,-y)
  rectfill(-1,-1,w+1,h+1,1)
  rect(-1,-1,w+1,h+1,0)
- cursor(9,5)
+ cursor(7,5)
  for option in all(options) do
   local selection=
    option[option.selected]
   print(
    option.label..
-   '  '..
+   '   '..
    selection.label,
    7
   )
@@ -991,8 +1004,8 @@ menu, or 🅾️ or
 ❎ to go back.)
 ]], 7)
  print(
-  '      <        >',
-  9,5+(options.selected-1)*6,
+  '        <        >',
+  7,5+(options.selected-1)*6,
   11
  )
  camera()
@@ -1028,13 +1041,13 @@ end
 function
 update_options()
  local o=options
- drawn_atom   =get_value(o[1])
- brush        =get_value(o[2])
- overdraw     =get_value(o[3])
- erase_type   =get_value(o[4])
- cursor_check =get_value(o[5])
- time_speed   =get_value(o[6])
- out_of_bounds=get_value(o[7])
+ draw_element  =get_value(o[1])
+ brush         =get_value(o[2])
+ overdraw      =get_value(o[3])
+ erase_selected=get_value(o[4])
+ get_input     =get_value(o[5])
+ time_speed    =get_value(o[6])
+ out_of_bounds =get_value(o[7])
 end
 
 -- get the value corresponding

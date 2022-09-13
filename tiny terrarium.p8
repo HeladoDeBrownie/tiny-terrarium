@@ -10,6 +10,8 @@ __lua__
 -- otherwise have access to it,
 -- try the education edition:
 -- https://www.pico-8-edu.com/
+
+cartdata'helado_tinyterrarium'
 -->8
 -- style
 -- this section describes the
@@ -424,6 +426,7 @@ simulation_screen.update()
  local fire2=fire2
  local fire3=fire3
  local plant=plant
+ local air=air
  local oil=oil
  local bug=bug
  local sand=sand
@@ -855,7 +858,6 @@ options={
  selected=1,
  {
   label='element',
-  selected=1,
   {
    label=' \f5block',
    value=block,
@@ -891,7 +893,6 @@ options={
  },
  {
   label='  brush',
-  selected=1,
   {label='   1x1',value={1,1}},
   {label='   2x2',value={2,2}},
   {label='   4x4',value={4,4}},
@@ -907,25 +908,21 @@ options={
  },
  {
   label='   draw',
-  selected=1,
   {label='  over',value=true},
   {label=' under',value=false},
  },
  {
   label='  erase',
-  selected=1,
   {label='   any',value=false},
   {label='select',value=true},
  },
  {
   label=' cursor',
-  selected=1,
   {label='  fast',value=btn_},
   {label='  slow',value=btnp_},
  },
  {
   label='   time',
-  selected=1,
   {label='  fast',value=1},
   {label='  slow',value=3},
   {label='  stop',value=nil
@@ -933,7 +930,6 @@ options={
  },
  {
   label='   edge',
-  selected=1,
   {label='   \fcair',value=12},
   {label=' \f5block',value= 5},
  },
@@ -961,14 +957,22 @@ options_screen.update()
 
  -- ⬆️⬇️ change which option is
  -- being set.
- if(btnp(⬆️))change(options,-1)
- if(btnp(⬇️))change(options, 1)
+ local dy=0
+ if(btnp(⬆️))dy=-1
+ if(btnp(⬇️))dy= 1
+ options.selected=
+  (options.selected+dy-1)%
+  #options+1
  -- ⬅️➡️ change the selection
  -- for the current option.
- local option=
-  options[options.selected]
- if(btnp(⬅️))change(option, -1)
- if(btnp(➡️))change(option,  1)
+ local index=options.selected
+ local dx=0
+ if(btnp(⬅️))dx=-1
+ if(btnp(➡️))dx= 1
+ dset(index-1,
+  (dget(index-1)+dx)%
+  #options[index]
+ )
 end
 
 function
@@ -985,9 +989,11 @@ options_screen.draw()
  rectfill(-1,-1,w+1,h+1,1)
  rect(-1,-1,w+1,h+1,0)
  cursor(7,5)
- for option in all(options) do
+ for index,option in
+  ipairs(options)
+ do
   local selection=
-   option[option.selected]
+   option[dget(index-1)+1]
   print(
    option.label..
    '   '..
@@ -1012,21 +1018,6 @@ menu, or 🅾️ or
  clip()
 end
 
--- set which selection the
--- given option is set to,
--- relative to the current
--- selection.
--- if the beginning or end of
--- the sequence is reached, it
--- wraps around.
-function
-change(option,amount)
- local length=#option
- option.selected=
-  ((option.selected+amount-1)%
-  length)+1
-end
-
 -- copy the values of all
 -- options to the corresponding
 -- variables.
@@ -1041,22 +1032,27 @@ end
 function
 update_options()
  local o=options
- draw_element  =get_value(o[1])
- brush         =get_value(o[2])
- overdraw      =get_value(o[3])
- erase_selected=get_value(o[4])
- get_input     =get_value(o[5])
- time_speed    =get_value(o[6])
- out_of_bounds =get_value(o[7])
+ draw_element  =get_option(1)
+ brush         =get_option(2)
+ overdraw      =get_option(3)
+ erase_selected=get_option(4)
+ get_input     =get_option(5)
+ time_speed    =get_option(6)
+ out_of_bounds =get_option(7)
 end
 
 -- get the value corresponding
 -- to the current selection for
--- the given option.
+-- the option at the given
+-- index. the current selection
+-- is read from the persistent
+-- cart data section of memory.
 function
-get_value(option)
- return
-  option[option.selected].value
+get_option(index)
+ local option=options[index]
+ local selection=
+  (dget(index-1)+1-1)%#option+1
+ return option[selection].value
 end
 __gfx__
 ffffffffffffffffffffffffffffffff000000000000000000000000000000001111111111111111111111111111111111111111111111111111111111111111

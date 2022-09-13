@@ -993,7 +993,7 @@ options_screen.draw()
   ipairs(options)
  do
   local selection=
-   option[dget(index-1)+1]
+   get_option(index)
   print(
    option.label..
    '   '..
@@ -1032,13 +1032,20 @@ end
 function
 update_options()
  local o=options
- draw_element  =get_option(1)
- brush         =get_option(2)
- overdraw      =get_option(3)
- erase_selected=get_option(4)
- get_input     =get_option(5)
- time_speed    =get_option(6)
- out_of_bounds =get_option(7)
+ draw_element=
+  get_option(1).value
+ brush=
+  get_option(2).value
+ overdraw=
+  get_option(3).value
+ erase_selected=
+  get_option(4).value
+ get_input=
+  get_option(5).value
+ time_speed=
+  get_option(6).value
+ out_of_bounds=
+  get_option(7).value
 end
 
 -- get the value corresponding
@@ -1051,8 +1058,9 @@ function
 get_option(index)
  local option=options[index]
  local selection=
-  (dget(index-1)+1-1)%#option+1
- return option[selection].value
+  flr(dget(index-1)+1-1)%
+  #option+1
+ return option[selection]
 end
 __gfx__
 ffffffffffffffffffffffffffffffff000000000000000000000000000000001111111111111111111111111111111111111111111111111111111111111111

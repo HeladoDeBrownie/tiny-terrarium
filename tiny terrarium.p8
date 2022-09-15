@@ -139,7 +139,9 @@ cartdata'helado_tinyterrarium'
 -- specific interaction between
 -- the two elements, the move
 -- is said to fail, and the
--- atoms remain unchanged.
+-- atoms remain unchanged. an
+-- atom that has already moved
+-- this turn cannot move again.
 
 -- out of bounds (oob):
 -- the area outside the board.
@@ -784,7 +786,11 @@ end
 -- return whether the move
 -- succeeded, i.e., there was
 -- a specific interaction that
--- was performed.
+-- was performed. the move can
+-- fail either because the
+-- elements don't interact or
+-- because one of the atoms has
+-- already moved this turn.
 function
 move(x1,y1,x2,y2,react)
  -- moving behaves a little
@@ -796,7 +802,7 @@ move(x1,y1,x2,y2,react)
   0<=y2 and y2<board_height
 
  -- do nothing if either atom
- -- has been swapped this turn.
+ -- has been moved this turn.
  if
   sget(x1+64,y1)~=0 or
   (in_bounds2 and

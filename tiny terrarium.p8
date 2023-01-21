@@ -357,6 +357,19 @@ time_speed=nil
 -- valid values are all defined
 -- elements.
 out_of_bounds=nil
+
+-- whether and how to play
+-- background music. the modes
+-- are off, on, and fun mode.
+-- if off, no music plays. if
+-- on, the bgm plays with the
+-- default instrumentation. if
+-- fun mode, the voicing varies
+-- based on what atoms are on
+-- the board.
+-- valid values are 0 for off,
+-- 1 for on, and 2 for fun.
+bgm_mode=nil
 -->8
 -- setup
 
@@ -365,7 +378,7 @@ _init()
  cartdata'helado_tinyterrarium'
  update_options()
  set_screen(simulation_screen)
- music(0)
+ if(bgm_mode~=0)music(0)
 end
 
 -- change what "screen" the
@@ -931,13 +944,26 @@ options={
   label='   time',
   {label='  fast',value=1},
   {label='  slow',value=3},
-  {label='  stop',value=nil
- },
+  {label='  stop',value=nil},
  },
  {
   label='   edge',
   {label='   \fcair',value=12},
   {label=' \f5block',value= 5},
+ },
+ {
+  label='  music',
+  {label='    on',value=1},
+  {label='   fun',value=2},
+  {label='   off',value=0},
+  update=function ()
+   local v=get_option(8).value
+   if v==0 then
+    music(-1)
+   elseif stat(54)==-1 then
+    music(0)
+   end
+  end
  },
 }
 
@@ -975,10 +1001,17 @@ options_screen.update()
  local dx=0
  if(btnp(⬅️))dx=-1
  if(btnp(➡️))dx= 1
+ local option=options[index]
  dset(index-1,
   (dget(index-1)+dx)%
-  #options[index]
+  #option
  )
+ if
+  dx~=0 and
+  option.update~=nil
+ then
+  option.update()
+ end
 end
 
 function
@@ -1052,6 +1085,8 @@ update_options()
   get_option(6).value
  out_of_bounds=
   get_option(7).value
+ bgm_mode=
+  get_option(8).value
 end
 
 -- get the value corresponding

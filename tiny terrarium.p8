@@ -280,9 +280,29 @@ air  =12 -- light blue
 oil  =13 -- lavender
 bug  =14 -- pink
 sand =15 -- tan
+
 spoutables={
  water,clay,block,egg,
  fire1,plant,oil,sand,
+}
+
+-- consult the pico-8 sfx editor
+-- for what instrument
+-- corresponds to each number.
+voices={
+ [water]=7,
+ [clay] =0,
+ [block]=6,
+ [egg]  =0,
+ [spout]=0,
+ [fire1]=0,
+ [fire2]=0,
+ [fire3]=0,
+ [plant]=0,
+ [air]  =0,
+ [oil]  =7,
+ [bug]  =0,
+ [sand] =0,
 }
 -->8
 -- state
@@ -540,7 +560,7 @@ simulation_screen.update()
      not moved and
      flr(rnd(3600))==0
     then
-     sset(x,y,bug)
+     place(x,y,bug)
      sset(x+64,y,1)
     end
    -- spout stays in place but
@@ -706,7 +726,7 @@ simulation_screen.update()
     if decay then
      local atom_=atom-1
      if(atom_==7)atom_=air
-     sset(x,y,atom_)
+     place(x,y,atom_)
     end
     if
      sget(x+sidex,y+sidey)~=air
@@ -787,7 +807,7 @@ simulation_screen.update()
       goto next
      end
     end
-    sset(x,y,atom)
+    place(x,y,atom)
     ::next::
    end
   end
@@ -895,17 +915,40 @@ move(x1,y1,x2,y2,react)
 
  -- change the atoms and mark
  -- them as moved for the turn.
- sset(x1,y1,new_atom1)
+ place(x1,y1,new_atom1)
  sset(x1+64,y1,1)
  -- the destination atom isn't
  -- changed if it's out of
  -- bounds.
  if in_bounds2 then
-  sset(x2,y2,new_atom2)
+  place(x2,y2,new_atom2)
   sset(x2+64,y2,1)
  end
 
  return true
+end
+
+function
+place(x,y,new_atom)
+ sset(x,y,new_atom)
+ -- if fun mode is active, also
+ -- update the music state.
+ if
+  bgm_mode==2 and
+  y<16 -- todo: temporary limit
+ then
+  local voice=
+   voices[new_atom] or 0
+  local track=y*2
+  local address=
+   0x3200+track*68+2*x
+  local data1=peek2(address)
+  local data2=
+   data1
+    &0b1111111000111111
+    |(voice<<6)
+  poke2(address,data2)
+ end
 end
 -->8
 -- options

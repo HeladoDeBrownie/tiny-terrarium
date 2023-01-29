@@ -836,6 +836,7 @@ simulation_screen.draw()
  )
 
  -- draw the cursor.
+
  local brw,brh=
   brush[1],brush[2]
  -- compute width and height
@@ -854,6 +855,13 @@ simulation_screen.draw()
   csx+cw*brw,csy+ch*brh,
   0
  )
+
+ -- if fun mode is on, indicate
+ -- what note is playing.
+ if bgm_mode==2 then
+  local x,y=stat(50),stat(54)
+  pset((x+0.5)*cw,(y+0.5)*ch,0)
+ end
 end
 
 -- move the atom at (x1,y1) to
@@ -1092,6 +1100,7 @@ options={
   {label='   off',value=0},
   update=function ()
    local v=get_option(9).value
+   bgm_mode=v
    if v==0 then
     music(-1)
    elseif stat(54)==-1 then

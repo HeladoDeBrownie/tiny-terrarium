@@ -407,9 +407,8 @@ bgm_mode=nil
 function
 _init()
  cartdata'helado_tinyterrarium'
- update_options()
+ update_options(false)
  set_screen(simulation_screen)
- if(bgm_mode~=0)music(0)
 end
 
 -- change what "screen" the
@@ -942,17 +941,32 @@ place(x,y,new_atom)
  -- if fun mode is active, also
  -- update the music state.
  if bgm_mode==2 then
-  local voice=
-   voices[new_atom] or 0
-  local track=32+y
-  local address=
-   0x3200+track*68+x*2
-  local data1=peek2(address)
-  local data2=
-   data1
-    &0b1111111000111111
-    |(voice<<6)
-  poke2(address,data2)
+  update_bgm(x,y,x,y)
+ end
+end
+
+-- set the bgm's bass voicing
+-- to something determined by
+-- the elements in the given
+-- rectangle on the board.
+function
+update_bgm(x0,y0,x1,y1)
+ local voices=voices
+ for x=x0,x1 do
+  for y=y0,y1 do
+   local atom=sget(x,y)
+   local voice=
+    voices[atom] or 0
+   local track=32+y
+   local address=
+    0x3200+track*68+x*2
+   local data1=peek2(address)
+   local data2=
+    data1
+     &0b1111111000111111
+     |(voice<<6)
+   poke2(address,data2)
+  end
  end
 end
 -->8
@@ -971,6 +985,17 @@ end
 -- isn't worth writing a pad
 -- function that parses the
 -- formatting codes.
+-- each option also has a
+-- function that must be run to
+-- update relevant game state.
+-- this is done, rather than
+-- using the options table
+-- directly in the simulation
+-- logic, because calling a
+-- function and doing multiple
+-- table lookups is slower than
+-- referencing a single global
+-- variable.
 options={
  selected=1,
  {
@@ -1011,6 +1036,9 @@ options={
    label=' \f7spout',
    value=spout,
   },
+  update=function(value)
+   draw_element=value
+  end,
  },
  {
   label='  brush',
@@ -1026,32 +1054,50 @@ options={
    label='column',
    value={1,board_height}
   },
+  update=function(value)
+   brush=value
+  end,
  },
  {
   label='   draw',
   {label='  over',value=true},
   {label=' under',value=false},
+  update=function(value)
+   overdraw=value
+  end,
  },
  {
   label='  erase',
   {label='   any',value=false},
   {label='select',value=true},
+  update=function(value)
+   erase_selected=value
+  end,
  },
  {
   label=' cursor',
   {label='  fast',value=btn_},
   {label='  slow',value=btnp_},
+  update=function(value)
+   get_input=value
+  end,
  },
  {
   label='   time',
   {label='  fast',value=1},
   {label='  slow',value=3},
   {label='  stop',value=nil},
+  update=function(value)
+   time_speed=value
+  end,
  },
  {
   label='   edge',
   {label='   \fcair',value=12},
   {label=' \f5block',value= 5},
+  update=function(value)
+   out_of_bounds=value
+  end,
  },
  {
   label='  spout',
@@ -1092,21 +1138,43 @@ options={
     '\f8r\f9a\fan\f3d\fco\fdm',
    value=nil,
   },
+  update=function(value)
+   spout_element=value
+  end,
  },
  {
   label='  music',
   {label='    on',value=1},
   {label='   fun',value=2},
   {label='   off',value=0},
-  update=function ()
-   local v=get_option(9).value
-   bgm_mode=v
-   if v==0 then
+  update=function(value)
+   -- silence the bgm if it was
+   -- just turned off.
+   if value==0 then
     music(-1)
+   -- start playing the bgm if
+   -- it was not playing.
    elseif stat(54)==-1 then
     music(0)
    end
-  end
+
+   -- fun mode is now active.
+   -- change the instruments
+   -- based on the whole board.
+   if value==2 then
+    update_bgm(
+     0,0,
+     board_width,board_height
+    )
+   -- fun mode is not active.
+   -- revert the instrument
+   -- changes.
+   else
+    reload(0x3200,0x3200,0x1100)
+   end
+   bgm_mode=value
+  end,
+  immediate=true,
  },
 }
 
@@ -1125,7 +1193,7 @@ options_screen.update()
   if ❎_held then
    input_lock[❎]=true
   end
-  update_options()
+  update_options(true)
   set_screen(simulation_screen)
   return
  end
@@ -1144,16 +1212,14 @@ options_screen.update()
  local dx=0
  if(btnp(⬅️))dx=-1
  if(btnp(➡️))dx= 1
+ if (dx==0) return
  local option=options[index]
  dset(index-1,
-  (dget(index-1)+dx)%
-  #option
- )
- if
-  dx~=0 and
-  option.update~=nil
- then
-  option.update()
+  (dget(index-1)+dx)%#option)
+ if option.immediate then
+  option.update(
+   get_option(index).value
+  )
  end
 end
 
@@ -1200,38 +1266,30 @@ menu, or 🅾️ or
  clip()
 end
 
--- copy the values of all
--- options to the corresponding
--- variables.
--- this is done, rather than
--- using the options table
--- directly in the simulation
--- logic, because calling a
--- function and doing multiple
--- table lookups is slower than
--- referencing a single global
--- variable.
+-- do update logic for all the
+-- options.
+-- an immediate option is one
+-- that does its update logic
+-- as soon as it changes. pass
+-- true if immediate options
+-- are already up to date, or
+-- false if they need to be
+-- updated. the latter is the
+-- case at cart startup.
 function
-update_options()
- local o=options
- draw_element=
-  get_option(1).value
- brush=
-  get_option(2).value
- overdraw=
-  get_option(3).value
- erase_selected=
-  get_option(4).value
- get_input=
-  get_option(5).value
- time_speed=
-  get_option(6).value
- out_of_bounds=
-  get_option(7).value
- spout_element=
-  get_option(8).value
- bgm_mode=
-  get_option(9).value
+update_options(skip_immediate)
+ for index,option in
+  ipairs(options)
+ do
+  if
+   not skip_immediate or
+   not option.immediate
+  then
+   option.update(
+    get_option(index).value
+   )
+  end
+ end
 end
 
 -- get the value corresponding
@@ -1541,3 +1599,4 @@ __music__
 00 3d0f4040
 00 3e104040
 02 3f404040
+

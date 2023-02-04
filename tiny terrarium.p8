@@ -1,5 +1,5 @@
 pico-8 cartridge // http://www.pico-8.com
-version 39
+version 40
 __lua__
 -- tiny terrarium
 -- by helado de brownie
@@ -286,9 +286,12 @@ spoutables={
  fire1,plant,oil,sand,
 }
 
--- consult the pico-8 sfx editor
--- for what instrument
+-- consult the pico-8 sfx
+-- editor for what instrument
 -- corresponds to each number.
+-- negative numbers are custom
+-- voices; add 8 to get the
+-- actual index.
 voices={
  [water]=7,
  [clay] =0,
@@ -945,10 +948,15 @@ place(x,y,new_atom)
  end
 end
 
--- set the bgm's bass voicing
--- to something determined by
--- the elements in the given
--- rectangle on the board.
+-- in the given rectangular
+-- region of the board, change
+-- the instrument of the bass
+-- note corresponding to each
+-- tile to an instrument that's
+-- determined by what atom is
+-- occupying that tile. see
+-- the constant named voices
+-- for what maps onto what.
 function
 update_bgm(x0,y0,x1,y1)
  local voices=voices
@@ -957,14 +965,20 @@ update_bgm(x0,y0,x1,y1)
    local atom=sget(x,y)
    local voice=
     voices[atom] or 0
+   local custom=0
+   if voice<0 then
+    voice+=8
+    custom=0b1000000000000000
+   end
    local track=32+y
    local address=
     0x3200+track*68+x*2
    local data1=peek2(address)
    local data2=
     data1
-     &0b1111111000111111
+     &0b0111111000111111
      |(voice<<6)
+     |custom
    poke2(address,data2)
   end
  end

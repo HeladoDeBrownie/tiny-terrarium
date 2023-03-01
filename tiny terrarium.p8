@@ -1193,6 +1193,7 @@ options={
   label='   time',
   {label='  fast',value=1},
   {label='  slow',value=3},
+  {label='slooow',value=9},
   {label='  stop',value=nil},
   update=function(value)
    time_speed=value

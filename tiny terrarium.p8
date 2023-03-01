@@ -10,11 +10,10 @@ __lua__
 -- otherwise have access to it,
 -- try the education edition:
 -- https://www.pico-8-edu.com/
--->8
--- style
--- this section describes the
--- stylistic conventions used
--- in the source code.
+
+-- the code is written
+-- according to the following
+-- style conventions.
 
 -- line length:
 -- each line must be at most 31

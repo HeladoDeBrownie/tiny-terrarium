@@ -282,7 +282,7 @@ sand =15 -- tan
 
 spoutables={
  water,clay,block,egg,
- fire1,plant,oil,sand,
+ fire3,plant,oil,sand,
 }
 
 -- consult the pico-8 sfx

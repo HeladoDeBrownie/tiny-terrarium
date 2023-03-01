@@ -807,6 +807,13 @@ simulation_screen.update()
  --   as the selected atom; or
  -- - erase_selected is
  --   disabled.
+ -- in addition, bug atoms are
+ -- not removable either by
+ -- drawing or erasing. they
+ -- can however be removed by
+ -- the simulation, such as by
+ -- falling off the edge or
+ -- being burned up.
  local atom
  if(btn(🅾️))atom=draw_element
  if(btn(❎))atom=air

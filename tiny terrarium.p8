@@ -770,6 +770,7 @@ simulation_screen.update()
  local cx,cy=cursor_x,cursor_y
  local brw,brh=
   brush[1],brush[2]
+ local seeking=brush.seeking
  if(btn(⬅️))cx-=1
  if(btn(➡️))cx+=1
  if(btn(⬆️))cy-=1
@@ -779,6 +780,21 @@ simulation_screen.update()
   mid(0,cy,bh-brh)
  cursor_x,cursor_y=cx,cy
 
+ -- with the seeking cursor,
+ -- pressing 🅾️ or ❎ plays the
+ -- bgm starting from the
+ -- selected row.
+ if seeking then
+  if
+   bgm_mode~=0 and
+   (btn(🅾️) or btn(❎))
+  then
+   music(cy)
+  end
+  return
+ end
+
+ -- with the ordinary cursor,
  -- 🅾️ replaces the atom under
  -- the cursor with the
  -- selected atom if:
@@ -851,6 +867,7 @@ simulation_screen.draw()
  -- compute width and height
  -- based on screen and board
  -- sizes.
+ local seeking=brush.seeking
  local cw,ch=
   128/bw,128/bh
  -- compute screen position
@@ -858,11 +875,13 @@ simulation_screen.draw()
  -- and cursor size.
  local csx,csy=
   cursor_x*cw,cursor_y*ch
- -- draw it as a black outline.
+ -- draw it as a black outline
+ -- if the normal cursor, or
+ -- purple for the seeking one.
  rect(
   csx-1,csy-1,
   csx+cw*brw,csy+ch*brh,
-  0
+  seeking and 2 or 0
  )
 
  -- if fun mode is on, indicate
@@ -1074,6 +1093,13 @@ options={
   {
    label='column',
    value={1,board_height}
+  },
+  {
+   label='  seek',
+   value={
+    seeking=true,
+    board_width,1,
+   }
   },
   update=function(value)
    brush=value

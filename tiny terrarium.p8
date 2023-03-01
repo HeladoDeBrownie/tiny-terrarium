@@ -1201,8 +1201,18 @@ options={
  },
  {
   label='   edge',
-  {label='   \fcair',value=12},
-  {label=' \f5block',value= 5},
+  {
+   label='   \fcair',
+   value=air,
+  },
+  {
+   label=' \f5block',
+   value=block,
+  },
+  {
+   label=' \#c\f1water',
+   value=water,
+  },
   update=function(value)
    out_of_bounds=value
   end,

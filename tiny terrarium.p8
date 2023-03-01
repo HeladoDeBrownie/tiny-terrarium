@@ -654,7 +654,8 @@ simulation_screen.update()
    -- bug falls straight down,
    -- or may move in a random
    -- direction. it may lay an
-   -- egg if there's room.
+   -- egg if there's room,
+   -- especially in plant.
    -- it passes through air
    -- when falling, and
    -- anything but block or
@@ -679,8 +680,10 @@ simulation_screen.update()
 
      local atom2_=atom2
      if
-      atom2==air and
-      flr(rnd(120))==0
+      (atom2==plant and
+      flr(rnd(12))==0) or
+      (atom2==air and
+      flr(rnd(120))==0)
      then
       atom2_=egg
      end

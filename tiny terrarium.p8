@@ -266,45 +266,59 @@ __lua__
 -- metadata.
 board_width,board_height=32,32
 
-water= 1 -- dark blue
-clay = 4 -- brown
-block= 5 -- dark gray
-egg  = 6 -- light gray
-spout= 7 -- white
-fire1= 8 -- red
-fire2= 9 -- orange
-fire3=10 -- yellow
-plant=11 -- light green
+-- each element *is* its color.
+-- atoms contain no data other
+-- than this.
 air  =12 -- light blue
-oil  =13 -- lavender
-bug  =14 -- pink
+block= 5 -- dark gray
+clay = 4 -- brown
 sand =15 -- tan
+water= 1 -- dark blue
+oil  =13 -- lavender
+plant=11 -- light green
+egg  = 6 -- light gray
+bug  =14 -- pink
+fire3=10 -- yellow
+fire2= 9 -- orange
+fire1= 8 -- red
+spout= 7 -- white
 
+-- when the "spout" setting is
+-- set to "random", these are
+-- the elements that will be
+-- emitted at random.
 spoutables={
- water,clay,block,egg,
- fire3,plant,oil,sand,
+ block,
+ clay,
+ sand,
+ water,
+ oil,
+ plant,
+ egg,
+ fire3,
 }
 
--- consult the pico-8 sfx
--- editor for what instrument
--- corresponds to each number.
+-- when music mode is set to
+-- "fun", these instruments
+-- will play to represent the
+-- given elements.
 -- negative numbers are custom
--- voices; add 8 to get the
--- actual index.
-voices={
- [water]=-6,
- [clay] = 1,
+-- instruments; add 8 to get
+-- the actual index.
+instruments={
+ [air]  = 0, -- triangle
  [block]=-8,
- [egg]  =-3,
- [spout]=-2,
- [fire1]= 6,
- [fire2]= 6,
- [fire3]= 6,
- [plant]= 5,
- [air]  = 0,
- [oil]  =-7,
- [bug]  =-5,
+ [clay] = 1, -- tilted saw
  [sand] =-4,
+ [water]=-6,
+ [oil]  =-7,
+ [plant]= 5, -- organ
+ [egg]  =-3,
+ [bug]  =-5,
+ [fire3]= 6, -- noise
+ [fire2]= 6, -- noise
+ [fire1]= 6, -- noise
+ [spout]=-2,
 }
 -->8
 -- state
@@ -333,6 +347,10 @@ cursor_x,cursor_y=
 -- this happens when the game
 -- loads and when the options
 -- screen is closed.
+-- although this is a no-op,
+-- they are set to nil here to
+-- make it clear that they
+-- exist and are used.
 
 -- the element that will be
 -- placed when the player
@@ -408,12 +426,15 @@ bgm_mode=nil
 -- drawing or erasing.
 -- valid values are true and
 -- false.
-sfx_mode=true
+sfx_mode=nil
 -->8
 -- setup
 
 function
 _init()
+ -- load any saved options and
+ -- begin on the simulation
+ -- screen.
  cartdata'helado_tinyterrarium'
  update_options(false)
  set_screen(simulation_screen)
@@ -431,7 +452,27 @@ set_screen(screen)
  _draw=screen.draw
 end
 
+-- as a consequence of the
+-- custom menu existing, it's
+-- necessary to prevent button
+-- presses from "leaking"
+-- across screens. this is
+-- handled by "locking" each
+-- button until it's been
+-- released at least once since
+-- changing screens. look for
+-- references to this variable
+-- to see everywhere that needs
+-- to be aware of this logic.
+-- a more robust implementation
+-- is possible, but was not
+-- necessary for our purposes.
 input_lock={}
+
+-- btn_ and btnp_ behave just
+-- like their namesakes btn and
+-- btnp, except they are aware
+-- of the input locking logic.
 
 function
 btn_(b)
@@ -472,22 +513,30 @@ simulation_screen.update()
 
  local bw,bh=
   board_width,board_height
- local water=water
- local clay=clay
- local egg=egg
- local spout=spout
- local fire1=fire1
- local fire2=fire2
- local fire3=fire3
- local plant=plant
  local air=air
- local oil=oil
- local bug=bug
+ local clay=clay
  local sand=sand
+ local water=water
+ local oil=oil
+ local plant=plant
+ local egg=egg
+ local bug=bug
+ local fire3=fire3
+ local fire2=fire2
+ local fire1=fire1
+ local spout=spout
  local spoutables=spoutables
  local spout_element=
   spout_element
 
+ -- slow time speed is handled
+ -- by skipping simulation
+ -- every so many frames. if
+ -- time is stopped, simulation
+ -- is always skipped. in any
+ -- case, the player still gets
+ -- to do things to the board
+ -- afterwards.
  local time_speed=time_speed
  local t=tick
  if(time_speed==nil)goto after
@@ -608,8 +657,9 @@ simulation_screen.update()
    -- egg if there's room.
    -- it passes through air
    -- when falling, and
-   -- anything but block when
-   -- moving with purpose.
+   -- anything but block or
+   -- spout when moving with
+   -- purpose.
    elseif atom==bug then
     local function
     react_fall(atom1,atom2)
@@ -779,7 +829,7 @@ simulation_screen.update()
   mid(0,cy,bh-brh)
  cursor_x,cursor_y=cx,cy
 
- -- with the seeking cursor,
+ -- with the seeking brush,
  -- pressing 🅾️ or ❎ plays the
  -- bgm starting from the
  -- selected row.
@@ -793,7 +843,7 @@ simulation_screen.update()
   return
  end
 
- -- with the ordinary cursor,
+ -- with the ordinary brushes,
  -- 🅾️ replaces the atom under
  -- the cursor with the
  -- selected atom if:
@@ -891,7 +941,9 @@ simulation_screen.draw()
  )
 
  -- if fun mode is on, indicate
- -- what note is playing.
+ -- what note is playing by
+ -- drawing a single dot on top
+ -- of the corresponding tile.
  if bgm_mode==2 then
   local x,y=stat(50),stat(54)
   pset((x+0.5)*cw,(y+0.5)*ch,0)
@@ -916,6 +968,9 @@ end
 -- elements don't interact or
 -- because one of the atoms has
 -- already moved this turn.
+-- element logic can use this
+-- to try multiple behaviors in
+-- sequence until one succeeds.
 function
 move(x1,y1,x2,y2,react)
  -- moving behaves a little
@@ -987,19 +1042,19 @@ end
 -- tile to an instrument that's
 -- determined by what atom is
 -- occupying that tile. see
--- the constant named voices
+-- the instruments constant
 -- for what maps onto what.
 function
 update_bgm(x0,y0,x1,y1)
- local voices=voices
+ local instruments=instruments
  for x=x0,x1 do
   for y=y0,y1 do
    local atom=sget(x,y)
-   local voice=
-    voices[atom] or 0
+   local instrument=
+    instruments[atom] or 0
    local custom=0
-   if voice<0 then
-    voice+=8
+   if instrument<0 then
+    instrument+=8
     custom=0b1000000000000000
    end
    local track=32+y
@@ -1009,7 +1064,7 @@ update_bgm(x0,y0,x1,y1)
    local data2=
     data1
      &0b0111111000111111
-     |(voice<<6)
+     |(instrument<<6)
      |custom
    poke2(address,data2)
   end
@@ -1023,9 +1078,8 @@ end
 -- which is shown to the player
 -- on the options screen, and a
 -- value, which is the actual
--- lua value that the variable
--- corresponding to the option
--- will be set to.
+-- lua value corresponding to
+-- that selection.
 -- labels are manually padded
 -- to 6 characters because it
 -- isn't worth writing a pad
@@ -1223,7 +1277,14 @@ options={
    -- revert the instrument
    -- changes.
    else
-    reload(0x3200,0x3200,0x1100)
+    reload(
+     -- ram offset to copy to
+     0x3200,
+     -- rom offset to copy from
+     0x3200,
+     -- how much to copy
+     0x1100
+    )
    end
    bgm_mode=value
   end,
